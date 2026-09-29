@@ -10,7 +10,7 @@ from rich.table import Table
 
 from embedcraft import __version__
 from embedcraft.bootstrap.container import container
-from embedcraft.cli.commands import project, source
+from embedcraft.cli.commands import ingest, project, source
 
 app = typer.Typer(
     name="embedcraft",
@@ -23,6 +23,8 @@ console = Console()
 # Register sub-commands
 app.add_typer(project.app, name="project")
 app.add_typer(source.app, name="source")
+app.add_typer(ingest.app, name="ingest")
+app.add_typer(ingest.preview_app, name="preview")
 
 
 @app.command("version")
