@@ -1,0 +1,17 @@
+[
+  {
+    "query": "¿Qué patrones de arquitectura implementa EmbedCraft RAG Studio?",
+    "expected_documents": ["enterprise_architecture.md"],
+    "reference_answer": "EmbedCraft implementa arquitectura hexagonal (puertos y adaptadores), almacenamiento vectorial LanceDB y base relacional SQLite en modo WAL."
+  },
+  {
+    "query": "¿Cómo garantiza el sistema la ausencia de alucinaciones?",
+    "expected_documents": ["enterprise_architecture.md"],
+    "reference_answer": "El motor de chat utiliza un prompt de grounding estricto que exige citas directas a las fuentes y responde indicando falta de evidencia si el contexto no contiene la respuesta."
+  },
+  {
+    "query": "¿Qué especificación define el formato de empaquetado portable?",
+    "expected_documents": ["enterprise_architecture.md"],
+    "reference_answer": "El formato .ecraft empaqueta manifest.json, project.yaml, perfiles y tablas Parquet protegidas contra Zip Slip mediante checksums SHA-256."
+  }
+]

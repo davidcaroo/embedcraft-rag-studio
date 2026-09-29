@@ -195,3 +195,35 @@ class ExportManifest(BaseModel):
     files: list[str] = Field(default_factory=list)
     checksums: dict[str, str] = Field(default_factory=dict)
     compatibility_notes: str = ""
+
+
+class EvaluationItem(BaseModel):
+    query: str
+    expected_documents: list[str] = Field(default_factory=list)
+    expected_chunks: list[str] = Field(default_factory=list)
+    reference_answer: str = ""
+
+
+class QueryEvaluationResult(BaseModel):
+    query: str
+    hit: bool
+    reciprocal_rank: float
+    retrieved_count: int
+    relevant_retrieved: int
+    latency_ms: float
+    top_sources: list[str] = Field(default_factory=list)
+
+
+class EvaluationReport(BaseModel):
+    project_name: str
+    total_queries: int
+    k: int
+    hit_rate: float
+    mrr: float
+    recall_at_k: float
+    precision_at_k: float
+    citation_coverage: float
+    avg_latency_ms: float
+    results: list[QueryEvaluationResult] = Field(default_factory=list)
+    evaluated_at: datetime = Field(default_factory=utc_now)
+

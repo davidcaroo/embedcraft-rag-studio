@@ -20,6 +20,7 @@ from embedcraft.bootstrap.container import container
 from embedcraft.cli.commands import (
     chat,
     collection,
+    evaluate,
     index,
     ingest,
     packaging,
@@ -48,6 +49,7 @@ app.command("chat")(chat.chat_cmd)
 app.command("search")(search.search_cmd)
 app.command("export")(packaging.export_cmd)
 app.command("import")(packaging.import_cmd)
+app.command("evaluate")(evaluate.evaluate_cmd)
 
 
 @app.command("version")

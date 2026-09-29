@@ -21,6 +21,7 @@ from embedcraft.adapters.rerankers.scoring_reranker import LexicalScoringReranke
 from embedcraft.adapters.secrets.keyring_secret_store import KeyringSecretStore
 from embedcraft.adapters.vector_stores.lancedb_store import LanceDBVectorStore
 from embedcraft.application.services.chat_service import ChatService
+from embedcraft.application.services.evaluation_service import EvaluationService
 from embedcraft.application.services.export_service import ExportService
 from embedcraft.application.services.import_service import ImportService
 from embedcraft.application.services.indexing_service import IndexingService
@@ -141,6 +142,10 @@ class Container:
             vector_store=self.vector_store,
             fts5_store=fts5_store,
         )
+
+    def get_evaluation_service(self, session: Session) -> EvaluationService:
+        indexing_svc = self.get_indexing_service(session)
+        return EvaluationService(indexing_service=indexing_svc)
 
 
 # Global container instance
