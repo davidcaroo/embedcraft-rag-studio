@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -11,12 +12,12 @@ if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
+    except (AttributeError, OSError):
         pass
 
 from embedcraft import __version__
 from embedcraft.bootstrap.container import container
-from embedcraft.cli.commands import ingest, project, source
+from embedcraft.cli.commands import collection, index, ingest, project, search, source
 
 app = typer.Typer(
     name="embedcraft",
@@ -31,6 +32,9 @@ app.add_typer(project.app, name="project")
 app.add_typer(source.app, name="source")
 app.add_typer(ingest.app, name="ingest")
 app.add_typer(ingest.preview_app, name="preview")
+app.add_typer(collection.app, name="collection")
+app.add_typer(index.app, name="index")
+app.command("search")(search.search_cmd)
 
 
 @app.command("version")

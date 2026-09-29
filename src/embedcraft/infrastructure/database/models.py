@@ -189,3 +189,15 @@ class JobStepModel(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     job = relationship("JobModel", back_populates="steps")
+
+
+class EmbeddingCacheModel(Base):
+    __tablename__ = "embedding_cache"
+
+    id = Column(String(64), primary_key=True)  # hash(text_hash + model_name + dimension)
+    text_hash = Column(String(64), nullable=False, index=True)
+    model_name = Column(String(100), nullable=False, index=True)
+    dimension = Column(Integer, nullable=False)
+    vector_json = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=utc_now)
+

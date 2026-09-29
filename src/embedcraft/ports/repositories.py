@@ -2,7 +2,15 @@
 
 from typing import Protocol
 
-from embedcraft.domain.entities import Collection, Document, IndexRevision, Job, Project, Source
+from embedcraft.domain.entities import (
+    Chunk,
+    Collection,
+    Document,
+    IndexRevision,
+    Job,
+    Project,
+    Source,
+)
 
 
 class ProjectRepository(Protocol):
@@ -27,6 +35,7 @@ class DocumentRepository(Protocol):
     def get_by_path(self, project_id: str, relative_path: str) -> Document | None: ...
     def list_by_project(self, project_id: str, limit: int = 100, offset: int = 0) -> list[Document]: ...
     def count_by_project(self, project_id: str) -> int: ...
+    def get_chunk_by_id(self, chunk_id: str) -> Chunk | None: ...
     def delete(self, document_id: str) -> bool: ...
 
 

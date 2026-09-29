@@ -183,6 +183,24 @@ class SQLiteDocumentRepository:
             for m in models
         ]
 
+    def get_chunk_by_id(self, chunk_id: str) -> Chunk | None:
+        m = self.session.query(ChunkModel).filter_by(id=chunk_id).first()
+        if not m:
+            return None
+        return Chunk(
+            id=m.id,
+            document_id=m.document_id,
+            document_version_id=m.document_version_id,
+            chunk_index=m.chunk_index,
+            text=m.text,
+            chunk_hash=m.chunk_hash,
+            metadata=ChunkMetadata(**(m.metadata_json or {})),
+            token_count=m.token_count or 0,
+            strategy_version=m.strategy_version or "v1",
+            created_at=m.created_at,
+            updated_at=m.updated_at,
+        )
+
     def _to_document_entity(self, model: DocumentModel) -> Document:
         return Document(
             id=model.id,
