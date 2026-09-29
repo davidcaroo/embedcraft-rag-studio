@@ -58,3 +58,5 @@ output/
 temp/
 logs/
 *.ecraft
+.security-audit/
+
