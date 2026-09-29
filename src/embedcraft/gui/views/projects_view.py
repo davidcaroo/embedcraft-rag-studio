@@ -85,6 +85,14 @@ class ProjectsView(QWidget):
         action_bar.addWidget(title)
         action_bar.addStretch()
 
+        btn_import = QPushButton("📥 Importar .ecraft", self)
+        btn_import.clicked.connect(self._import_ecraft_package)
+        action_bar.addWidget(btn_import)
+
+        btn_export = QPushButton("📤 Exportar .ecraft", self)
+        btn_export.clicked.connect(self._export_ecraft_package)
+        action_bar.addWidget(btn_export)
+
         btn_create = QPushButton("+ Nuevo Proyecto", self)
         btn_create.setProperty("class", "primaryBtn")
         btn_create.clicked.connect(self._open_create_dialog)
@@ -246,3 +254,57 @@ class ProjectsView(QWidget):
                     self._reload_sources(self._selected_project_id)
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"No se pudo agregar el archivo: {e!s}")
+
+    def _export_ecraft_package(self):
+        if not self._selected_project_id:
+            QMessageBox.warning(self, "Atención", "Seleccione un proyecto para exportar.")
+            return
+
+        with container.get_session() as session:
+            proj = container.get_project_repository(session).get_by_id(self._selected_project_id)
+            if not proj:
+                return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exportar Paquete .ecraft",
+            f"{proj.name}.ecraft",
+            "EmbedCraft Package (*.ecraft)",
+        )
+        if file_path:
+            try:
+                with container.get_session() as session:
+                    export_svc = container.get_export_service(session)
+                    manifest = export_svc.export_project(proj.name, Path(file_path))
+                    QMessageBox.information(
+                        self,
+                        "Exportación Completada",
+                        f"Proyecto '{manifest.project_name}' exportado con éxito a:\n{file_path}\n\n"
+                        f"Documentos: {manifest.document_count} | Chunks: {manifest.chunk_count}",
+                    )
+            except Exception as e:
+                QMessageBox.critical(self, "Error de Exportación", f"No se pudo exportar: {e!s}")
+
+    def _import_ecraft_package(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Importar Paquete .ecraft",
+            "",
+            "EmbedCraft Package (*.ecraft)",
+        )
+        if file_path:
+            try:
+                with container.get_session() as session:
+                    import_svc = container.get_import_service(session)
+                    imported = import_svc.import_project(Path(file_path))
+                    session.commit()
+                    self._selected_project_id = imported.id
+                    self.reload_projects()
+                    self.project_created.emit(imported.id)
+                    QMessageBox.information(
+                        self,
+                        "Importación Completada",
+                        f"Proyecto '{imported.name}' importado exitosamente desde:\n{file_path}",
+                    )
+            except Exception as e:
+                QMessageBox.critical(self, "Error de Importación", f"Fallo al importar paquete: {e!s}")

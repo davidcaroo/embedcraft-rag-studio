@@ -21,6 +21,8 @@ from embedcraft.adapters.rerankers.scoring_reranker import LexicalScoringReranke
 from embedcraft.adapters.secrets.keyring_secret_store import KeyringSecretStore
 from embedcraft.adapters.vector_stores.lancedb_store import LanceDBVectorStore
 from embedcraft.application.services.chat_service import ChatService
+from embedcraft.application.services.export_service import ExportService
+from embedcraft.application.services.import_service import ImportService
 from embedcraft.application.services.indexing_service import IndexingService
 from embedcraft.application.services.ingestion_service import IngestionService
 from embedcraft.application.services.project_service import ProjectService
@@ -114,6 +116,30 @@ class Container:
             indexing_service=indexing_svc,
             llm_provider=self.llm_provider,
             reranker=self.reranker,
+        )
+
+    def get_export_service(self, session: Session) -> ExportService:
+        proj_repo = SQLiteProjectRepository(session)
+        doc_repo = SQLiteDocumentRepository(session)
+        coll_repo = SQLiteCollectionRepository(session)
+        return ExportService(
+            project_repo=proj_repo,
+            document_repo=doc_repo,
+            collection_repo=coll_repo,
+            vector_store=self.vector_store,
+        )
+
+    def get_import_service(self, session: Session) -> ImportService:
+        proj_repo = SQLiteProjectRepository(session)
+        doc_repo = SQLiteDocumentRepository(session)
+        coll_repo = SQLiteCollectionRepository(session)
+        fts5_store = SQLiteFTS5Store(session)
+        return ImportService(
+            project_repo=proj_repo,
+            document_repo=doc_repo,
+            collection_repo=coll_repo,
+            vector_store=self.vector_store,
+            fts5_store=fts5_store,
         )
 
 

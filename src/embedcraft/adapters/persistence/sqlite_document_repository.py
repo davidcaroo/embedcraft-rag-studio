@@ -201,6 +201,68 @@ class SQLiteDocumentRepository:
             updated_at=m.updated_at,
         )
 
+    def list_chunks_by_project(self, project_id: str) -> list[Chunk]:
+        models = (
+            self.session.query(ChunkModel)
+            .join(DocumentModel, ChunkModel.document_id == DocumentModel.id)
+            .filter(DocumentModel.project_id == project_id)
+            .order_by(ChunkModel.chunk_index.asc())
+            .all()
+        )
+        return [
+            Chunk(
+                id=m.id,
+                document_id=m.document_id,
+                document_version_id=m.document_version_id,
+                chunk_index=m.chunk_index,
+                text=m.text,
+                chunk_hash=m.chunk_hash,
+                metadata=ChunkMetadata(**(m.metadata_json or {})),
+                token_count=m.token_count or 0,
+                strategy_version=m.strategy_version or "v1",
+                created_at=m.created_at,
+                updated_at=m.updated_at,
+            )
+            for m in models
+        ]
+
+    def save_documents_batch(self, docs: Sequence[Document]) -> None:
+        for doc in docs:
+            self.upsert(doc)
+        self.session.flush()
+
+    def save_chunks_batch(self, chunks: Sequence[Chunk]) -> None:
+        for chunk in chunks:
+            v_exists = self.session.query(DocumentVersionModel).filter_by(id=chunk.document_version_id).first()
+            if not v_exists:
+                v_model = DocumentVersionModel(
+                    id=chunk.document_version_id,
+                    document_id=chunk.document_id,
+                    version_number=1,
+                    content_hash="imported",
+                    normalized_text_hash="imported",
+                    canonical_text="",
+                    chunk_count=1,
+                )
+                self.session.add(v_model)
+                self.session.flush()
+
+            c_model = ChunkModel(
+                id=chunk.id,
+                document_id=chunk.document_id,
+                document_version_id=chunk.document_version_id,
+                chunk_index=chunk.chunk_index,
+                text=chunk.text,
+                chunk_hash=chunk.chunk_hash,
+                metadata_json=chunk.metadata.model_dump(),
+                token_count=chunk.token_count,
+                strategy_version=chunk.strategy_version,
+                created_at=chunk.created_at,
+                updated_at=chunk.updated_at,
+            )
+            self.session.add(c_model)
+        self.session.flush()
+
     def _to_document_entity(self, model: DocumentModel) -> Document:
         return Document(
             id=model.id,

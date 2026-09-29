@@ -166,6 +166,34 @@ class ExportError(EmbedCraftError):
         )
 
 
+class NotFoundError(EmbedCraftError):
+    """Entity or resource not found."""
+
+    def __init__(self, message: str, technical_detail: str | None = None, **kwargs):
+        super().__init__(
+            code="ERR_NOT_FOUND",
+            message=message,
+            technical_detail=technical_detail,
+            recommended_action="Compruebe que el identificador o nombre especificado existe.",
+            retryable=False,
+            **kwargs,
+        )
+
+
+class SecurityError(EmbedCraftError):
+    """Security vulnerability or path traversal attempt."""
+
+    def __init__(self, message: str, technical_detail: str | None = None, **kwargs):
+        super().__init__(
+            code="ERR_SECURITY",
+            message=message,
+            technical_detail=technical_detail,
+            recommended_action="El archivo contiene referencias de ruta peligrosas y ha sido bloqueado por seguridad.",
+            retryable=False,
+            **kwargs,
+        )
+
+
 class InternalError(EmbedCraftError):
     """Unexpected internal error."""
 

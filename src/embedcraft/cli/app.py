@@ -17,7 +17,16 @@ if sys.platform == "win32":
 
 from embedcraft import __version__
 from embedcraft.bootstrap.container import container
-from embedcraft.cli.commands import chat, collection, index, ingest, project, search, source
+from embedcraft.cli.commands import (
+    chat,
+    collection,
+    index,
+    ingest,
+    packaging,
+    project,
+    search,
+    source,
+)
 
 app = typer.Typer(
     name="embedcraft",
@@ -34,8 +43,11 @@ app.add_typer(ingest.app, name="ingest")
 app.add_typer(ingest.preview_app, name="preview")
 app.add_typer(collection.app, name="collection")
 app.add_typer(index.app, name="index")
+app.add_typer(packaging.package_app, name="package")
 app.command("chat")(chat.chat_cmd)
 app.command("search")(search.search_cmd)
+app.command("export")(packaging.export_cmd)
+app.command("import")(packaging.import_cmd)
 
 
 @app.command("version")
