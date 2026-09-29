@@ -69,6 +69,11 @@ line-length = 100
 target-version = "py313"
 exclude = [".venv"]
 
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+per-file-ignores = { "src/embedcraft/gui/*" = ["BLE001", "S110", "SLF001"], "tests/*" = ["SLF001"] }
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]

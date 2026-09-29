@@ -82,10 +82,14 @@ def doctor(
 
 @app.command("gui")
 def gui():
-    """Iniciar la interfaz gráfica de usuario PySide6 (Fase 4)."""
-    console.print("[bold cyan]EmbedCraft RAG Studio GUI[/bold cyan]")
-    console.print("[yellow]La interfaz gráfica completa está programada para la Fase 4.[/yellow]")
-    console.print("El núcleo de datos, repositorios y CLI están completamente operativos.")
+    """Iniciar la interfaz gráfica de usuario PySide6."""
+    try:
+        from embedcraft.gui.app import run_gui
+
+        run_gui()
+    except Exception as e:
+        console.print(f"[bold red]Error iniciando GUI:[/bold red] {e}")
+        raise typer.Exit(code=1) from e
 
 
 def main():
