@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 from embedcraft import __version__
 from embedcraft.gui.components.header import HeaderBar
 from embedcraft.gui.components.sidebar import Sidebar
+from embedcraft.gui.views.chat_view import ChatView
 from embedcraft.gui.views.collections_view import CollectionsView
 from embedcraft.gui.views.dashboard_view import DashboardView
 from embedcraft.gui.views.doctor_view import DoctorView
@@ -99,7 +100,11 @@ class MainWindow(QMainWindow):
         cols = CollectionsView(self)
         self._register_view("collections", cols, "Colecciones e Índices")
 
-        # 6. Doctor
+        # 6. Chat
+        chat = ChatView(self)
+        self._register_view("chat", chat, "Chat de Prueba y Diagnóstico")
+
+        # 7. Doctor
         doc = DoctorView(self)
         self._register_view("doctor", doc, "Diagnóstico del Sistema")
 

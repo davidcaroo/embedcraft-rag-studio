@@ -10,6 +10,7 @@ os.environ["QT_QPA_PLATFORM"] = "offscreen"
 from PySide6.QtWidgets import QApplication
 
 from embedcraft.gui.main_window import MainWindow
+from embedcraft.gui.views.chat_view import ChatView
 from embedcraft.gui.views.collections_view import CollectionsView
 from embedcraft.gui.views.dashboard_view import DashboardView
 from embedcraft.gui.views.doctor_view import DoctorView
@@ -31,17 +32,18 @@ def test_main_window_initialization_and_navigation(qapp):
     window = MainWindow()
     assert "EmbedCraft RAG Studio" in window.windowTitle()
 
-    # Verify all 6 views are registered in stacked widget
-    assert len(window.views) == 6
+    # Verify all 7 views are registered in stacked widget
+    assert len(window.views) == 7
     assert isinstance(window.views["dashboard"], DashboardView)
     assert isinstance(window.views["projects"], ProjectsView)
     assert isinstance(window.views["monitor"], MonitorView)
     assert isinstance(window.views["preview"], PreviewView)
     assert isinstance(window.views["collections"], CollectionsView)
+    assert isinstance(window.views["chat"], ChatView)
     assert isinstance(window.views["doctor"], DoctorView)
 
     # Test navigation to each view
-    for key in ["projects", "monitor", "preview", "collections", "doctor", "dashboard"]:
+    for key in ["projects", "monitor", "preview", "collections", "chat", "doctor", "dashboard"]:
         window.sidebar._on_btn_clicked(key)
         assert window.stack.currentWidget() == window.views[key]
 
@@ -90,3 +92,12 @@ def test_collections_view_empty_state(qapp):
     cols.set_project("dummy-proj")
     assert cols.col_table.rowCount() == 0
     cols.close()
+
+
+def test_chat_view_rendering_and_interaction(qapp):
+    chat = ChatView()
+    assert chat.cite_table.columnCount() == 3
+    assert chat.spin_topk.value() == 5
+    chat.set_project("test-chat-proj")
+    assert chat._current_project_id == "test-chat-proj"
+    chat.close()

@@ -158,22 +158,22 @@ class Job(BaseEntity):
 
 
 class Citation(BaseModel):
-    document_id: str
+    document_id: str = ""
     document_path: str
-    document_title: str
+    document_title: str = ""
     chunk_id: str
     section: str = ""
     page: int | None = None
-    snippet: str
+    snippet: str = ""
 
 
 class RetrievalResult(BaseModel):
     chunk_id: str
-    document_id: str
+    document_id: str = ""
     text: str
     score: float
     reranked_score: float | None = None
-    collection_id: str
+    collection_id: str = ""
     citation: Citation
     metadata: dict[str, Any] = Field(default_factory=dict)
 

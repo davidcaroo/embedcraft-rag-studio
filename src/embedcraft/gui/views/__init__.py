@@ -1,5 +1,6 @@
 """GUI views module exports."""
 
+from embedcraft.gui.views.chat_view import ChatView
 from embedcraft.gui.views.collections_view import CollectionsView
 from embedcraft.gui.views.dashboard_view import DashboardView
 from embedcraft.gui.views.doctor_view import DoctorView
@@ -8,6 +9,7 @@ from embedcraft.gui.views.preview_view import PreviewView
 from embedcraft.gui.views.projects_view import ProjectsView
 
 __all__ = [
+    "ChatView",
     "CollectionsView",
     "DashboardView",
     "DoctorView",

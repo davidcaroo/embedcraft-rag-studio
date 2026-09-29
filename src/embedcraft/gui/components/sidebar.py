@@ -47,6 +47,7 @@ class Sidebar(QWidget):
         self._add_nav_item("monitor", "⚡ Ingestión & Monitor", layout)
         self._add_nav_item("preview", "🔍 Previews & Chunks", layout)
         self._add_nav_item("collections", "📚 Colecciones & Índices", layout)
+        self._add_nav_item("chat", "💬 Chat de Prueba", layout)
 
         layout.addSpacing(16)
 

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from embedcraft.adapters.embeddings.cache import SQLiteEmbeddingCache
 from embedcraft.adapters.embeddings.mock_provider import MockEmbeddingProvider
+from embedcraft.adapters.llm.mock_provider import MockLLMProvider
 from embedcraft.adapters.persistence.sqlite_document_repository import SQLiteDocumentRepository
 from embedcraft.adapters.persistence.sqlite_job_repository import SQLiteJobRepository
 from embedcraft.adapters.persistence.sqlite_project_repository import (
@@ -16,8 +17,10 @@ from embedcraft.adapters.persistence.sqlite_revision_repository import (
     SQLiteCollectionRepository,
     SQLiteRevisionRepository,
 )
+from embedcraft.adapters.rerankers.scoring_reranker import LexicalScoringReranker
 from embedcraft.adapters.secrets.keyring_secret_store import KeyringSecretStore
 from embedcraft.adapters.vector_stores.lancedb_store import LanceDBVectorStore
+from embedcraft.application.services.chat_service import ChatService
 from embedcraft.application.services.indexing_service import IndexingService
 from embedcraft.application.services.ingestion_service import IngestionService
 from embedcraft.application.services.project_service import ProjectService
@@ -25,6 +28,8 @@ from embedcraft.application.services.system_service import SystemService
 from embedcraft.infrastructure.database.connection import DatabaseManager, db_manager
 from embedcraft.infrastructure.database.fts5_store import SQLiteFTS5Store
 from embedcraft.ports.embeddings import EmbeddingProvider
+from embedcraft.ports.llm import LLMProvider
+from embedcraft.ports.reranker import RerankerProvider
 from embedcraft.ports.vector_store import VectorStore
 
 
@@ -34,6 +39,8 @@ class Container:
         db: DatabaseManager | None = None,
         vector_store: VectorStore | None = None,
         embedding_provider: EmbeddingProvider | None = None,
+        llm_provider: LLMProvider | None = None,
+        reranker: RerankerProvider | None = None,
     ):
         self.db = db or db_manager
         self.db.init_schema()
@@ -41,6 +48,8 @@ class Container:
         self.system_service = SystemService()
         self.vector_store = vector_store or LanceDBVectorStore()
         self.embedding_provider = embedding_provider or MockEmbeddingProvider()
+        self.llm_provider = llm_provider or MockLLMProvider()
+        self.reranker = reranker or LexicalScoringReranker()
 
     def get_session(self):
         return self.db.get_session()
@@ -97,6 +106,14 @@ class Container:
             fts_store=fts_store,
             embedding_provider=self.embedding_provider,
             embedding_cache=cache,
+        )
+
+    def get_chat_service(self, session: Session) -> ChatService:
+        indexing_svc = self.get_indexing_service(session)
+        return ChatService(
+            indexing_service=indexing_svc,
+            llm_provider=self.llm_provider,
+            reranker=self.reranker,
         )
 
 
