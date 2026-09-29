@@ -25,7 +25,7 @@ class TextReader:
         metadata: dict[str, Any] | None = None,
     ) -> CanonicalDocument:
         try:
-            content = file_path.read_text(encoding="utf-8", errors="replace")
+            content = file_path.read_text(encoding="utf-8-sig", errors="replace")
         except Exception as e:
             raise DocumentError(
                 message=f"No se pudo leer el archivo de texto: {file_path.name}",

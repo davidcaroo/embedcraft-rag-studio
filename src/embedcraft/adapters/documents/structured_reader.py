@@ -27,7 +27,7 @@ class CSVReader:
         metadata: dict[str, Any] | None = None,
     ) -> CanonicalDocument:
         try:
-            with file_path.open("r", encoding="utf-8", errors="replace") as f:
+            with file_path.open("r", encoding="utf-8-sig", errors="replace") as f:
                 # Detect delimiter
                 sample = f.read(2048)
                 f.seek(0)
@@ -86,14 +86,14 @@ class JSONReader:
 
         try:
             if ext == ".jsonl":
-                with file_path.open("r", encoding="utf-8", errors="replace") as f:
+                with file_path.open("r", encoding="utf-8-sig", errors="replace") as f:
                     for line_idx, line in enumerate(f, start=1):
                         line_str = line.strip()
                         if line_str:
                             item = json.loads(line_str)
                             text_parts.append(f"Registro {line_idx}:\n" + json.dumps(item, ensure_ascii=False, indent=2))
             else:
-                raw_json = file_path.read_text(encoding="utf-8", errors="replace")
+                raw_json = file_path.read_text(encoding="utf-8-sig", errors="replace")
                 data = json.loads(raw_json)
                 if isinstance(data, list):
                     for idx, item in enumerate(data, start=1):

@@ -27,7 +27,7 @@ class HTMLReader:
         metadata: dict[str, Any] | None = None,
     ) -> CanonicalDocument:
         try:
-            raw_html = file_path.read_text(encoding="utf-8", errors="replace")
+            raw_html = file_path.read_text(encoding="utf-8-sig", errors="replace")
             soup = BeautifulSoup(raw_html, "html.parser")
         except Exception as e:
             raise DocumentError(

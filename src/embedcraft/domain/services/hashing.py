@@ -49,10 +49,12 @@ def compute_stream_hash(stream: BinaryIO, chunk_size: int = 65536) -> str:
 def normalize_text(text: str) -> str:
     """Normalize text for consistent diffing and hashing.
 
+    - Strips UTF-8 BOM if present
     - Replaces CRLF and CR with LF
     - Collapses multiple whitespace spaces/tabs into single space per line
     - Strips leading and trailing line whitespace
     """
+    text = text.lstrip("\ufeff")
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     # Clean whitespace per line
     lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.split("\n")]

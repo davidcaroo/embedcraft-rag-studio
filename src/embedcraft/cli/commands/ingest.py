@@ -101,7 +101,7 @@ def run_ingestion(
                 )
 
             step = job.steps[0] if job.steps else None
-            console.print(f"\n[bold green]✔ Ingestión completada.[/bold green] Trabajo ID: [dim]{job.id}[/dim]")
+            console.print(f"\n[bold green][OK] Ingestión completada.[/bold green] Trabajo ID: [dim]{job.id}[/dim]")
             if step:
                 console.print(f"  Procesados: [bold green]{step.items_processed}[/bold green] | Fallidos: [bold red]{step.items_failed}[/bold red]")
 

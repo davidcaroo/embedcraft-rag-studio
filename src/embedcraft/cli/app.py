@@ -1,12 +1,18 @@
-"""Main CLI application entrypoint for EmbedCraft RAG Studio."""
-
 from __future__ import annotations
 
 import json
-
+import sys
 import typer
 from rich.console import Console
 from rich.table import Table
+
+# Ensure UTF-8 output on Windows consoles to prevent cp1252 charmap errors
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 from embedcraft import __version__
 from embedcraft.bootstrap.container import container

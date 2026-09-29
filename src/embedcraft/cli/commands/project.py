@@ -29,7 +29,7 @@ def create_project(
             if as_json:
                 console.print_json(json.dumps(proj.model_dump(mode="json")))
             else:
-                console.print(f"[bold green]✔[/bold green] Proyecto '[bold cyan]{proj.name}[/bold cyan]' creado exitosamente.")
+                console.print(f"[bold green][OK][/bold green] Proyecto '[bold cyan]{proj.name}[/bold cyan]' creado exitosamente.")
                 console.print(f"  [dim]ID:[/dim] {proj.id}")
                 console.print(f"  [dim]Almacenamiento:[/dim] {proj.storage_path}")
         except EmbedCraftError as e:
@@ -115,7 +115,7 @@ def delete_project(
         service = container.get_project_service(session)
         deleted = service.delete_project(identifier)
         if deleted:
-            console.print(f"[bold green]✔[/bold green] Proyecto '{identifier}' eliminado.")
+            console.print(f"[bold green][OK][/bold green] Proyecto '{identifier}' eliminado.")
         else:
             console.print(f"[bold red]Error:[/bold red] No se encontró el proyecto '{identifier}'.")
             raise typer.Exit(code=1)

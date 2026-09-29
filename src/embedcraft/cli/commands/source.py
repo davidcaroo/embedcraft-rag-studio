@@ -36,7 +36,7 @@ def add_source(
             if as_json:
                 console.print_json(json.dumps(source.model_dump(mode="json")))
             else:
-                console.print(f"[bold green]✔[/bold green] Fuente '[bold cyan]{source.name}[/bold cyan]' añadida con éxito.")
+                console.print(f"[bold green][OK][/bold green] Fuente '[bold cyan]{source.name}[/bold cyan]' añadida con éxito.")
                 console.print(f"  [dim]Ruta:[/dim] {source.uri_or_path}")
                 console.print(f"  [dim]Recursivo:[/dim] {'Sí' if source.recursive else 'No'}")
         except EmbedCraftError as e:
