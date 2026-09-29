@@ -22,6 +22,10 @@ from embedcraft.domain.entities import (
 from embedcraft.domain.exceptions import EmbedCraftError, SecurityError
 from embedcraft.domain.value_objects import ChunkMetadata, DocumentStatus
 
+MAX_ARCHIVE_ENTRY_BYTES = 200 * 1024 * 1024  # 200 MB per file limit
+MAX_TOTAL_UNCOMPRESSED_BYTES = 1024 * 1024 * 1024  # 1 GB cumulative limit
+MAX_ARCHIVE_ENTRIES_COUNT = 50000  # 50,000 files limit
+
 
 def _is_safe_path(base_dir: Path, target_path: Path) -> bool:
     """Verifies that target_path resolves strictly inside base_dir (Zip Slip defense)."""
@@ -66,8 +70,15 @@ class ImportService:
         dummy_base = Path("/safe_base").resolve()
 
         with zipfile.ZipFile(pkg_path, "r") as zf:
-            # 1. Zip Slip / Path Traversal Defense
-            for info in zf.infolist():
+            infolist = zf.infolist()
+            if len(infolist) > MAX_ARCHIVE_ENTRIES_COUNT:
+                raise SecurityError(
+                    f"El archivo contiene demasiadas entradas ({len(infolist)} > {MAX_ARCHIVE_ENTRIES_COUNT})."
+                )
+
+            # 1. Zip Slip / Path Traversal and Zip Bomb Decompression Defense
+            total_uncompressed = 0
+            for info in infolist:
                 name = info.filename
                 if name.startswith("/") or name.startswith("\\") or ":" in name or ".." in name:
                     raise SecurityError(
@@ -77,6 +88,15 @@ class ImportService:
                 if not _is_safe_path(dummy_base, target):
                     raise SecurityError(
                         f"Path traversal attempt detected escaping root: {name}"
+                    )
+                if info.file_size > MAX_ARCHIVE_ENTRY_BYTES:
+                    raise SecurityError(
+                        f"La entrada '{name}' excede el límite de tamaño ({info.file_size} > {MAX_ARCHIVE_ENTRY_BYTES} bytes)."
+                    )
+                total_uncompressed += info.file_size
+                if total_uncompressed > MAX_TOTAL_UNCOMPRESSED_BYTES:
+                    raise SecurityError(
+                        f"El tamaño total descomprimido del archivo excede el umbral de seguridad ({total_uncompressed} > {MAX_TOTAL_UNCOMPRESSED_BYTES} bytes)."
                     )
 
             namelist = zf.namelist()

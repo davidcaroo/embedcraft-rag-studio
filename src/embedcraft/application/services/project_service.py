@@ -16,18 +16,41 @@ class ProjectService:
         self.source_repo = source_repo
 
     def create_project(self, name: str, description: str = "") -> Project:
-        existing = self.project_repo.get_by_name(name)
-        if existing:
+        import re
+
+        clean_name = name.strip()
+        if not clean_name or "/" in clean_name or "\\" in clean_name or ".." in clean_name:
             raise ConfigurationError(
-                message=f"El proyecto con nombre '{name}' ya existe.",
-                technical_detail=f"Duplicate project name conflict: {name}",
+                message=f"Nombre de proyecto inválido: '{name}'.",
+                technical_detail="Project name cannot contain path separators or traversal sequences.",
             )
 
-        storage_path = str(settings.projects_dir / name)
-        Path(storage_path).mkdir(parents=True, exist_ok=True)
+        if not re.match(r"^[\w\-. ]+$", clean_name):
+            raise ConfigurationError(
+                message=f"Nombre de proyecto inválido: '{name}'. Solo se permiten caracteres alfanuméricos, guiones y espacios.",
+                technical_detail="Project name contains disallowed characters.",
+            )
+
+        target_dir = (settings.projects_dir / clean_name).resolve()
+        base_dir = settings.projects_dir.resolve()
+        if not target_dir.is_relative_to(base_dir):
+            raise ConfigurationError(
+                message=f"La ruta del proyecto '{name}' intenta escapar del directorio de almacenamiento.",
+                technical_detail="Path traversal attempt detected in project name.",
+            )
+
+        existing = self.project_repo.get_by_name(clean_name)
+        if existing:
+            raise ConfigurationError(
+                message=f"El proyecto con nombre '{clean_name}' ya existe.",
+                technical_detail=f"Duplicate project name conflict: {clean_name}",
+            )
+
+        storage_path = str(target_dir)
+        target_dir.mkdir(parents=True, exist_ok=True)
 
         project = Project(
-            name=name,
+            name=clean_name,
             description=description,
             storage_path=storage_path,
         )

@@ -82,7 +82,7 @@ class SQLiteFTS5Store:
         # If user explicitly surrounded with quotes, do exact phrase match
         trimmed = query.strip()
         if trimmed.startswith('"') and trimmed.endswith('"') and len(trimmed) > 2:
-            inner = trimmed.strip('"')
+            inner = trimmed[1:-1].replace('"', '""')
             match_expr = f'"{inner}"'
         else:
             match_expr = " OR ".join(f'"{t}"*' for t in tokens)
@@ -93,12 +93,17 @@ class SQLiteFTS5Store:
                 {"match_query": match_expr, "rev": revision_id, "top_k": top_k},
             ).fetchall()
         except SQLAlchemyError:
-            # Fallback if complex token search fails
-            fallback_expr = " OR ".join(f'"{t}"' for t in tokens)
-            rows = self.session.execute(
-                text(search_sql),
-                {"match_query": fallback_expr, "rev": revision_id, "top_k": top_k},
-            ).fetchall()
+            self.session.rollback()
+            try:
+                # Fallback if complex token search fails
+                fallback_expr = " OR ".join(f'"{t}"' for t in tokens)
+                rows = self.session.execute(
+                    text(search_sql),
+                    {"match_query": fallback_expr, "rev": revision_id, "top_k": top_k},
+                ).fetchall()
+            except SQLAlchemyError:
+                self.session.rollback()
+                return []
 
         results: list[ScoredRecord] = []
         for row in rows:

@@ -42,6 +42,8 @@ from embedcraft.ports.repositories import (
     SourceRepository,
 )
 
+MAX_DOCUMENT_SIZE_BYTES = 100 * 1024 * 1024  # 100 MB maximum document size limit
+
 
 class ScanItem(BaseModel):
     document_id: str
@@ -119,6 +121,24 @@ class IngestionService:
                 scanned_paths.add(rel_path)
 
                 stat = file_path.stat()
+                if stat.st_size > MAX_DOCUMENT_SIZE_BYTES:
+                    result.unsupported_count += 1
+                    result.items.append(
+                        ScanItem(
+                            document_id=generate_stable_document_id(project.id, rel_path),
+                            source_id=source.id,
+                            relative_path=rel_path,
+                            absolute_path=str(file_path.resolve()),
+                            file_hash="",
+                            size_bytes=stat.st_size,
+                            modified_at=datetime.fromtimestamp(stat.st_mtime, tz=UTC),
+                            mime_type="application/octet-stream",
+                            status=DocumentStatus.FAILED,
+                            reason=f"El archivo supera el tamaño máximo permitido (100 MB): {stat.st_size / (1024 * 1024):.1f} MB.",
+                        )
+                    )
+                    continue
+
                 mime, _ = mimetypes.guess_type(file_path)
                 mime_type = mime or "application/octet-stream"
 
@@ -197,6 +217,11 @@ class IngestionService:
         p = Path(file_path)
         if not p.is_file():
             raise DocumentError(f"Archivo no encontrado: {file_path}")
+
+        if p.stat().st_size > MAX_DOCUMENT_SIZE_BYTES:
+            raise DocumentError(
+                f"El archivo '{p.name}' supera el tamaño máximo permitido de previsualización (100 MB)."
+            )
 
         mime, _ = mimetypes.guess_type(p)
         reader = self.reader_registry.get_reader_or_raise(p, mime or "")

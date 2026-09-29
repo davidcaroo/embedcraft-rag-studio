@@ -1,5 +1,6 @@
 """Interactive RAG chat and diagnostics view with citation inspection and JSON export."""
 
+import html
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -222,36 +223,40 @@ class ChatView(QWidget):
             self.cite_table.setItem(idx - 1, 2, QTableWidgetItem(" | ".join(pos) if pos else "—"))
 
     def _append_user_message(self, text: str):
-        html = f"""
+        safe_text = html.escape(text)
+        markup = f"""
         <div style="margin: 8px 0px; text-align: right;">
             <div style="display: inline-block; background-color: #6366F1; color: #FFFFFF; padding: 10px 14px; border-radius: 12px; max-width: 80%; text-align: left;">
-                <b>Usuario:</b><br>{text}
+                <b>Usuario:</b><br>{safe_text}
             </div>
         </div>
         """
-        self.chat_history.append(html)
+        self.chat_history.append(markup)
 
     def _append_assistant_message(self, text: str, citations: list):
         cite_badges = ""
         if citations:
             cite_badges = "<div style='margin-top: 8px; font-size: 11px; color: #64748B;'><b>Fuentes citadas:</b> "
             for i, c in enumerate(citations, start=1):
-                cite_badges += f"<span style='background-color: #E0E7FF; color: #3730A3; padding: 2px 6px; border-radius: 4px; margin-right: 4px;'>[{i}] {c.document_path}</span>"
+                safe_doc_path = html.escape(c.document_path)
+                cite_badges += f"<span style='background-color: #E0E7FF; color: #3730A3; padding: 2px 6px; border-radius: 4px; margin-right: 4px;'>[{i}] {safe_doc_path}</span>"
             cite_badges += "</div>"
 
-        html = f"""
+        safe_content = html.escape(text).replace("\n", "<br>")
+        markup = f"""
         <div style="margin: 8px 0px; text-align: left;">
             <div style="display: inline-block; background-color: #F1F5F9; color: #0F172A; padding: 10px 14px; border-radius: 12px; max-width: 85%; border: 1px solid #CBD5E1;">
-                <b>EmbedCraft Assistant:</b><br>{text.replace(chr(10), '<br>')}
+                <b>EmbedCraft Assistant:</b><br>{safe_content}
                 {cite_badges}
             </div>
         </div>
         """
-        self.chat_history.append(html)
+        self.chat_history.append(markup)
 
     def _append_system_message(self, text: str):
-        html = f"<div style='margin: 6px 0px; color: #64748B; font-size: 12px; font-style: italic;'>ℹ {text}</div>"
-        self.chat_history.append(html)
+        safe_text = html.escape(text)
+        markup = f"<div style='margin: 6px 0px; color: #64748B; font-size: 12px; font-style: italic;'>ℹ {safe_text}</div>"
+        self.chat_history.append(markup)
 
     def _clear_chat(self):
         self.chat_history.clear()
