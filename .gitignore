@@ -60,9 +60,10 @@ logs/
 *.ecraft
 .security-audit/
 
-# Local prompt instructions
+# Local prompt instructions and helper scripts
 Prompt maestro.md
 *.prompt.md
+scripts/
 
 # IDE configs
 .idea/
