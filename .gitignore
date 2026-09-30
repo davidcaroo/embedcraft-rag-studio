@@ -65,6 +65,7 @@ logs/
 Prompt maestro.md
 *.prompt.md
 scripts/
+*.bat
 
 # IDE configs
 .idea/
