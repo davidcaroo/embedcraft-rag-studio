@@ -32,8 +32,9 @@ class PreviewView(QWidget):
         # Title
         header = QHBoxLayout()
         title = QLabel("Previsualización e Inspección Documental", self)
-        title.setStyleSheet("font-size: 18px; font-weight: 700; color: #0F172A;")
+        title.setObjectName("viewTitle")
         header.addWidget(title)
+        header.addStretch()
         layout.addLayout(header)
 
         # 3-pane Splitter
@@ -78,7 +79,13 @@ class PreviewView(QWidget):
 
         splitter.addWidget(chunks_card)
 
-        splitter.setSizes([280, 400, 360])
+        splitter.setSizes([280, 500, 380])
+        splitter.setStretchFactor(0, 2)
+        splitter.setStretchFactor(1, 4)
+        splitter.setStretchFactor(2, 3)
+        splitter.setCollapsible(0, False)
+        splitter.setCollapsible(1, False)
+        splitter.setCollapsible(2, False)
         layout.addWidget(splitter)
 
     def set_project(self, project_id: str):
@@ -104,7 +111,7 @@ class PreviewView(QWidget):
                     item = QTableWidgetItem(d.relative_path)
                     item.setData(32, d.id)
                     self.doc_table.setItem(idx, 0, item)
-                    self.doc_table.setItem(idx, 1, QTableWidgetItem(d.status.value))
+                    self.doc_table.setItem(idx, 1, QTableWidgetItem(d.status.value.upper()))
 
                 if docs:
                     self.doc_table.selectRow(0)

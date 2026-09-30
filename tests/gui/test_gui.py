@@ -267,3 +267,108 @@ def test_no_emojis_in_base_views(qapp):
     doc_view.close()
 
 
+def test_no_emojis_in_interactive_views(qapp):
+    from PySide6.QtWidgets import QLabel, QPushButton, QScrollArea, QSplitter
+
+    forbidden_emojis = [
+        "📊", "📁", "⚡", "🔍", "📚", "💬", "🩺", "✔", "⚠", "✖",
+        "📥", "📤", "📄", "🧩", "🔄", "➕", "🛑", "⏳", "▶", "⏹",
+        "💾", "🚀", "↩", "ℹ",
+    ]
+
+    # 1. MonitorView
+    mon = MonitorView()
+    scroll_areas = mon.findChildren(QScrollArea)
+    assert len(scroll_areas) > 0, "MonitorView must wrap content in QScrollArea"
+    assert scroll_areas[0].widgetResizable() is True
+
+    mon_titles = [lbl for lbl in mon.findChildren(QLabel) if lbl.objectName() == "viewTitle"]
+    assert len(mon_titles) > 0, "MonitorView must have a title with objectName 'viewTitle'"
+
+    assert mon.btn_start.text() == "Iniciar Ingestión Incremental"
+    assert not mon.btn_start.icon().isNull(), "MonitorView btn_start must have vector icon"
+    assert mon.btn_cancel.text() == "Cancelar Proceso"
+    assert not mon.btn_cancel.icon().isNull(), "MonitorView btn_cancel must have vector icon"
+
+    for btn in mon.findChildren(QPushButton):
+        for emoji in forbidden_emojis:
+            assert emoji not in btn.text(), f"Emoji '{emoji}' found in Monitor button '{btn.text()}'"
+
+    for lbl in mon.findChildren(QLabel):
+        for emoji in forbidden_emojis:
+            assert emoji not in lbl.text(), f"Emoji '{emoji}' found in Monitor label '{lbl.text()}'"
+    mon.close()
+
+    # 2. PreviewView
+    prev = PreviewView()
+    prev_titles = [lbl for lbl in prev.findChildren(QLabel) if lbl.objectName() == "viewTitle"]
+    assert len(prev_titles) > 0, "PreviewView must have a title with objectName 'viewTitle'"
+
+    splitters = prev.findChildren(QSplitter)
+    assert len(splitters) > 0, "PreviewView must contain a QSplitter"
+    prev_splitter = splitters[0]
+    assert prev_splitter.count() == 3, "PreviewView splitter must contain 3 panes"
+    assert not prev_splitter.isCollapsible(0)
+    assert not prev_splitter.isCollapsible(1)
+    assert not prev_splitter.isCollapsible(2)
+
+    for btn in prev.findChildren(QPushButton):
+        for emoji in forbidden_emojis:
+            assert emoji not in btn.text(), f"Emoji '{emoji}' found in Preview button '{btn.text()}'"
+
+    for lbl in prev.findChildren(QLabel):
+        for emoji in forbidden_emojis:
+            assert emoji not in lbl.text(), f"Emoji '{emoji}' found in Preview label '{lbl.text()}'"
+    prev.close()
+
+    # 3. ChatView
+    chat = ChatView()
+    chat_titles = [lbl for lbl in chat.findChildren(QLabel) if lbl.objectName() == "viewTitle"]
+    assert len(chat_titles) > 0, "ChatView must have a title with objectName 'viewTitle'"
+
+    assert chat.btn_export.text() == "Exportar Diagnóstico JSON"
+    assert not chat.btn_export.icon().isNull(), "ChatView btn_export must have vector icon"
+
+    chat_splitters = chat.findChildren(QSplitter)
+    assert len(chat_splitters) > 0, "ChatView must contain a QSplitter"
+
+    assert hasattr(chat, "metrics_box"), "ChatView must have metrics_box"
+    assert chat.metrics_box.objectName() == "metricsBox"
+
+    for btn in chat.findChildren(QPushButton):
+        for emoji in forbidden_emojis:
+            assert emoji not in btn.text(), f"Emoji '{emoji}' found in Chat button '{btn.text()}'"
+
+    for lbl in chat.findChildren(QLabel):
+        for emoji in forbidden_emojis:
+            assert emoji not in lbl.text(), f"Emoji '{emoji}' found in Chat label '{lbl.text()}'"
+
+    # Chat history should not contain emoji like ℹ
+    for emoji in forbidden_emojis:
+        assert emoji not in chat.chat_history.toPlainText()
+    chat.close()
+
+    # 4. CollectionsView
+    cols = CollectionsView()
+    cols_titles = [lbl for lbl in cols.findChildren(QLabel) if lbl.objectName() == "viewTitle"]
+    assert len(cols_titles) > 0, "CollectionsView must have a title with objectName 'viewTitle'"
+
+    assert cols.btn_publish.text() == "Publicar Nueva Revisión"
+    assert not cols.btn_publish.icon().isNull(), "CollectionsView btn_publish must have vector icon"
+    assert cols.btn_rollback.text() == "Hacer Rollback"
+    assert not cols.btn_rollback.icon().isNull(), "CollectionsView btn_rollback must have vector icon"
+
+    cols_splitters = cols.findChildren(QSplitter)
+    assert len(cols_splitters) > 0, "CollectionsView must contain a QSplitter"
+
+    for btn in cols.findChildren(QPushButton):
+        for emoji in forbidden_emojis:
+            assert emoji not in btn.text(), f"Emoji '{emoji}' found in Collections button '{btn.text()}'"
+
+    for lbl in cols.findChildren(QLabel):
+        for emoji in forbidden_emojis:
+            assert emoji not in lbl.text(), f"Emoji '{emoji}' found in Collections label '{lbl.text()}'"
+    cols.close()
+
+
+

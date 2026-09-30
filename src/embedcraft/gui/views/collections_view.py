@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 
 from embedcraft.bootstrap.container import container
 from embedcraft.gui.components.card import Card
+from embedcraft.gui.icons import get_icon
 from embedcraft.gui.workers.async_workers import IndexingWorker
 
 
@@ -36,16 +37,18 @@ class CollectionsView(QWidget):
         # Header action bar
         action_bar = QHBoxLayout()
         title = QLabel("Colecciones e Índices Vectoriales", self)
-        title.setStyleSheet("font-size: 18px; font-weight: 700; color: #0F172A;")
+        title.setObjectName("viewTitle")
         action_bar.addWidget(title)
         action_bar.addStretch()
 
-        self.btn_publish = QPushButton("🚀 Publicar Nueva Revisión", self)
+        self.btn_publish = QPushButton("Publicar Nueva Revisión", self)
+        self.btn_publish.setIcon(get_icon("upload"))
         self.btn_publish.setProperty("class", "primaryBtn")
         self.btn_publish.clicked.connect(self._publish_revision)
         action_bar.addWidget(self.btn_publish)
 
-        self.btn_rollback = QPushButton("↩ Hacer Rollback", self)
+        self.btn_rollback = QPushButton("Hacer Rollback", self)
+        self.btn_rollback.setIcon(get_icon("refresh"))
         self.btn_rollback.clicked.connect(self._rollback_revision)
         action_bar.addWidget(self.btn_rollback)
 
@@ -81,6 +84,10 @@ class CollectionsView(QWidget):
         splitter.addWidget(rev_card)
 
         splitter.setSizes([380, 520])
+        splitter.setStretchFactor(0, 1)
+        splitter.setStretchFactor(1, 1)
+        splitter.setCollapsible(0, False)
+        splitter.setCollapsible(1, False)
         layout.addWidget(splitter)
 
     def set_project(self, project_id: str):
@@ -119,7 +126,7 @@ class CollectionsView(QWidget):
                     item_num.setData(32, r.id)
                     self.rev_table.setItem(idx, 0, item_num)
                     self.rev_table.setItem(idx, 1, QTableWidgetItem(r.status.value))
-                    is_active = "✔ ACTIVA" if r.id == active_rev_id else "—"
+                    is_active = "ACTIVA" if r.id == active_rev_id else "—"
                     self.rev_table.setItem(idx, 2, QTableWidgetItem(is_active))
                     self.rev_table.setItem(idx, 3, QTableWidgetItem(str(r.total_documents)))
                     self.rev_table.setItem(idx, 4, QTableWidgetItem(str(r.total_chunks)))
@@ -147,7 +154,7 @@ class CollectionsView(QWidget):
 
     def _on_publish_finished(self, rev_dict: dict):
         self.btn_publish.setEnabled(True)
-        self.btn_publish.setText("🚀 Publicar Nueva Revisión")
+        self.btn_publish.setText("Publicar Nueva Revisión")
         self._cleanup_worker()
         self.reload_data()
         QMessageBox.information(
@@ -158,7 +165,7 @@ class CollectionsView(QWidget):
 
     def _on_publish_failed(self, error: str):
         self.btn_publish.setEnabled(True)
-        self.btn_publish.setText("🚀 Publicar Nueva Revisión")
+        self.btn_publish.setText("Publicar Nueva Revisión")
         self._cleanup_worker()
         QMessageBox.critical(self, "Error de Indexación", error)
 

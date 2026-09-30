@@ -27,6 +27,8 @@ from PySide6.QtWidgets import (
 from embedcraft.bootstrap.container import container
 from embedcraft.domain.value_objects import SearchMode
 from embedcraft.gui.components.card import Card
+from embedcraft.gui.icons import get_icon
+from embedcraft.gui.theme import get_palette, theme_manager
 
 
 class ChatView(QWidget):
@@ -45,11 +47,12 @@ class ChatView(QWidget):
         # Header Title
         header_layout = QHBoxLayout()
         title = QLabel("Chat de Prueba y Diagnóstico RAG", self)
-        title.setStyleSheet("font-size: 18px; font-weight: 700; color: #0F172A;")
+        title.setObjectName("viewTitle")
         header_layout.addWidget(title)
         header_layout.addStretch()
 
-        self.btn_export = QPushButton("💾 Exportar Diagnóstico JSON", self)
+        self.btn_export = QPushButton("Exportar Diagnóstico JSON", self)
+        self.btn_export.setIcon(get_icon("download"))
         self.btn_export.setEnabled(False)
         self.btn_export.clicked.connect(self._export_json)
         header_layout.addWidget(self.btn_export)
@@ -63,8 +66,8 @@ class ChatView(QWidget):
         chat_card = Card("Conversación", "Interacción en vivo fundamentada en el corpus", self)
 
         self.chat_history = QTextEdit(self)
+        self.chat_history.setObjectName("chatHistory")
         self.chat_history.setReadOnly(True)
-        self.chat_history.setStyleSheet("background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px;")
         chat_card.add_widget(self.chat_history)
 
         # Input Row
@@ -117,29 +120,30 @@ class ChatView(QWidget):
         diag_card.add_layout(param_form)
 
         # Latency & Token metrics box
-        metrics_box = QWidget(self)
-        metrics_box.setStyleSheet("background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px;")
-        mb_layout = QVBoxLayout(metrics_box)
+        palette = get_palette(theme_manager.mode)
+        self.metrics_box = QWidget(self)
+        self.metrics_box.setObjectName("metricsBox")
+        mb_layout = QVBoxLayout(self.metrics_box)
         mb_layout.setContentsMargins(8, 8, 8, 8)
         mb_layout.setSpacing(4)
 
-        self.lbl_lat_total = QLabel("Latencia Total: — ms", metrics_box)
-        self.lbl_lat_total.setStyleSheet("font-weight: 700; color: #0F172A;")
+        self.lbl_lat_total = QLabel("Latencia Total: — ms", self.metrics_box)
+        self.lbl_lat_total.setStyleSheet(f"font-weight: 700; color: {palette.TEXT_PRIMARY};")
         mb_layout.addWidget(self.lbl_lat_total)
 
-        self.lbl_lat_breakdown = QLabel("Recuperación: — | Rerank: — | Gen: —", metrics_box)
-        self.lbl_lat_breakdown.setStyleSheet("font-size: 11px; color: #64748B;")
+        self.lbl_lat_breakdown = QLabel("Recuperación: — | Rerank: — | Gen: —", self.metrics_box)
+        self.lbl_lat_breakdown.setStyleSheet(f"font-size: 11px; color: {palette.TEXT_MUTED};")
         mb_layout.addWidget(self.lbl_lat_breakdown)
 
-        self.lbl_tokens = QLabel("Tokens: Prompt: 0 | Comp: 0 | Total: 0", metrics_box)
-        self.lbl_tokens.setStyleSheet("font-size: 11px; color: #64748B;")
+        self.lbl_tokens = QLabel("Tokens: Prompt: 0 | Comp: 0 | Total: 0", self.metrics_box)
+        self.lbl_tokens.setStyleSheet(f"font-size: 11px; color: {palette.TEXT_MUTED};")
         mb_layout.addWidget(self.lbl_tokens)
 
-        diag_card.add_widget(metrics_box)
+        diag_card.add_widget(self.metrics_box)
 
         # Citations Table
         lbl_cite_title = QLabel("Citas y Fuentes Utilizadas", self)
-        lbl_cite_title.setStyleSheet("font-weight: 600; font-size: 12px; color: #334155; margin-top: 8px;")
+        lbl_cite_title.setStyleSheet(f"font-weight: 600; font-size: 12px; color: {palette.TEXT_SECONDARY}; margin-top: 8px;")
         diag_card.add_widget(lbl_cite_title)
 
         self.cite_table = QTableWidget(self)
@@ -152,7 +156,11 @@ class ChatView(QWidget):
         diag_card.add_widget(self.cite_table)
 
         splitter.addWidget(diag_card)
-        splitter.setSizes([600, 360])
+        splitter.setSizes([600, 380])
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 2)
+        splitter.setCollapsible(0, False)
+        splitter.setCollapsible(1, False)
         layout.addWidget(splitter)
 
         self._append_system_message("Bienvenido al Chat de Prueba RAG de EmbedCraft. Realice consultas fundamentadas en los documentos del proyecto activo.")
@@ -224,9 +232,10 @@ class ChatView(QWidget):
 
     def _append_user_message(self, text: str):
         safe_text = html.escape(text)
+        palette = get_palette(theme_manager.mode)
         markup = f"""
         <div style="margin: 8px 0px; text-align: right;">
-            <div style="display: inline-block; background-color: #6366F1; color: #FFFFFF; padding: 10px 14px; border-radius: 12px; max-width: 80%; text-align: left;">
+            <div style="display: inline-block; background-color: {palette.PRIMARY}; color: #FFFFFF; padding: 10px 14px; border-radius: 12px; max-width: 80%; text-align: left;">
                 <b>Usuario:</b><br>{safe_text}
             </div>
         </div>
@@ -234,18 +243,19 @@ class ChatView(QWidget):
         self.chat_history.append(markup)
 
     def _append_assistant_message(self, text: str, citations: list):
+        palette = get_palette(theme_manager.mode)
         cite_badges = ""
         if citations:
-            cite_badges = "<div style='margin-top: 8px; font-size: 11px; color: #64748B;'><b>Fuentes citadas:</b> "
+            cite_badges = f"<div style='margin-top: 8px; font-size: 11px; color: {palette.TEXT_MUTED};'><b>Fuentes citadas:</b> "
             for i, c in enumerate(citations, start=1):
                 safe_doc_path = html.escape(c.document_path)
-                cite_badges += f"<span style='background-color: #E0E7FF; color: #3730A3; padding: 2px 6px; border-radius: 4px; margin-right: 4px;'>[{i}] {safe_doc_path}</span>"
+                cite_badges += f"<span style='background-color: {palette.PRIMARY_LIGHT}; color: {palette.PRIMARY}; padding: 2px 6px; border-radius: 4px; margin-right: 4px;'>[{i}] {safe_doc_path}</span>"
             cite_badges += "</div>"
 
         safe_content = html.escape(text).replace("\n", "<br>")
         markup = f"""
         <div style="margin: 8px 0px; text-align: left;">
-            <div style="display: inline-block; background-color: #F1F5F9; color: #0F172A; padding: 10px 14px; border-radius: 12px; max-width: 85%; border: 1px solid #CBD5E1;">
+            <div style="display: inline-block; background-color: {palette.BG_CARD}; color: {palette.TEXT_PRIMARY}; padding: 10px 14px; border-radius: 12px; max-width: 85%; border: 1px solid {palette.BORDER};">
                 <b>EmbedCraft Assistant:</b><br>{safe_content}
                 {cite_badges}
             </div>
@@ -255,7 +265,8 @@ class ChatView(QWidget):
 
     def _append_system_message(self, text: str):
         safe_text = html.escape(text)
-        markup = f"<div style='margin: 6px 0px; color: #64748B; font-size: 12px; font-style: italic;'>ℹ {safe_text}</div>"
+        palette = get_palette(theme_manager.mode)
+        markup = f"<div style='margin: 6px 0px; color: {palette.TEXT_MUTED}; font-size: 12px; font-style: italic;'>[Sistema] {safe_text}</div>"
         self.chat_history.append(markup)
 
     def _clear_chat(self):
