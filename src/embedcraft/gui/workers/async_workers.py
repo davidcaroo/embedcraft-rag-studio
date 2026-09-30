@@ -25,21 +25,25 @@ class IngestionWorker(QObject):
             self.log_emitted.emit(f"Iniciando escaneo e ingestión para proyecto {self.project_id}...", "INFO")
             with container.get_session() as session:
                 ingest_svc = container.get_ingestion_service(session)
+                doc_repo = container.get_document_repository(session)
 
                 # Scan sources
                 scan_diff = ingest_svc.scan_sources(self.project_id)
-                total = len(scan_diff.new_paths) + len(scan_diff.modified_paths) + len(scan_diff.deleted_paths)
+                total = scan_diff.new_count + scan_diff.modified_count + scan_diff.deleted_count
                 self.log_emitted.emit(
-                    f"Escaneo finalizado: {len(scan_diff.new_paths)} nuevos, {len(scan_diff.modified_paths)} modificados, {len(scan_diff.deleted_paths)} eliminados.",
+                    f"Escaneo finalizado: {scan_diff.new_count} nuevos, {scan_diff.modified_count} modificados, {scan_diff.deleted_count} eliminados.",
                     "INFO",
                 )
 
                 if total == 0:
                     self.progress_updated.emit(100, 100, "Completado")
+                    total_chunks = len(doc_repo.list_chunks_by_project(self.project_id))
+                    total_docs = doc_repo.count_by_project(self.project_id)
+                    self.log_emitted.emit("Las fuentes ya están actualizadas. No hay documentos pendientes por procesar.", "INFO")
                     self.job_finished.emit({
                         "status": "up_to_date",
-                        "processed": 0,
-                        "chunks": 0,
+                        "processed_documents": total_docs,
+                        "generated_chunks": total_chunks,
                     })
                     return
 
@@ -50,15 +54,25 @@ class IngestionWorker(QObject):
                     self.progress_updated.emit(done, tot, path)
                     self.log_emitted.emit(f"Procesando [{done}/{tot}]: {path}", "DEBUG")
 
-                summary = ingest_svc.run_ingestion(self.project_id, progress_callback=on_progress)
+                job = ingest_svc.run_ingestion(self.project_id, progress_callback=on_progress)
                 session.commit()
 
+                step = job.steps[0] if job.steps else None
+                processed_docs = step.items_processed if step else 0
+                failed_docs = step.items_failed if step else 0
+                total_chunks = len(doc_repo.list_chunks_by_project(self.project_id))
+
                 self.progress_updated.emit(100, 100, "Finalizado")
-                self.log_emitted.emit(
-                    f"Ingestión completada con éxito. Documentos: {summary.processed_documents}, Fragmentos: {summary.generated_chunks}",
-                    "SUCCESS",
-                )
-                self.job_finished.emit(summary.model_dump())
+                msg = f"Ingestión completada con éxito. Documentos procesados: {processed_docs}, Fragmentos: {total_chunks}"
+                if failed_docs:
+                    msg += f" (Fallidos: {failed_docs})"
+                self.log_emitted.emit(msg, "SUCCESS")
+                self.job_finished.emit({
+                    "status": "completed",
+                    "processed_documents": processed_docs,
+                    "generated_chunks": total_chunks,
+                    "failed_documents": failed_docs,
+                })
 
         except Exception as e:
             err = f"Error durante la ingestión: {e!s}"

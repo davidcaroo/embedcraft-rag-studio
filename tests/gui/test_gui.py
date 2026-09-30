@@ -371,4 +371,49 @@ def test_no_emojis_in_interactive_views(qapp):
     cols.close()
 
 
+def test_ingestion_worker_scan_and_execution(qapp, tmp_path):
+    import uuid
+
+    from embedcraft.bootstrap.container import container
+    from embedcraft.domain.entities import Project, Source
+    from embedcraft.gui.workers.async_workers import IngestionWorker
+
+    # Create dummy source file
+    doc_file = tmp_path / "sample.txt"
+    doc_file.write_text("EmbedCraft RAG Studio test content for ingestion worker.", encoding="utf-8")
+
+    unique_name = f"test-worker-proj-{uuid.uuid4().hex[:8]}"
+    with container.get_session() as session:
+        proj_repo = container.get_project_repository(session)
+        src_repo = container.get_source_repository(session)
+
+        proj = proj_repo.create(Project(name=unique_name, storage_path=str(tmp_path)))
+        source = Source(project_id=proj.id, name="Test Folder", uri_or_path=str(tmp_path), recursive=False)
+        src_repo.add(source)
+        session.commit()
+        proj_id = proj.id
+
+    worker = IngestionWorker(proj_id)
+    finished_data = []
+    failed_errors = []
+    worker.job_finished.connect(lambda d: finished_data.append(d))
+    worker.job_failed.connect(lambda e: failed_errors.append(e))
+
+    worker.run()
+
+    assert len(failed_errors) == 0, f"Worker failed with error: {failed_errors}"
+    assert len(finished_data) == 1
+    assert finished_data[0]["status"] == "completed"
+    assert finished_data[0]["processed_documents"] >= 1
+    assert finished_data[0]["generated_chunks"] >= 1
+
+    # Second run should report up_to_date
+    finished_data.clear()
+    worker.run()
+    assert len(failed_errors) == 0
+    assert len(finished_data) == 1
+    assert finished_data[0]["status"] == "up_to_date"
+
+
+
 

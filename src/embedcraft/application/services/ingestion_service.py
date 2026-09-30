@@ -68,6 +68,18 @@ class ScanResult(BaseModel):
     unsupported_count: int = 0
     items: list[ScanItem] = Field(default_factory=list)
 
+    @property
+    def new_paths(self) -> list[str]:
+        return [i.relative_path for i in self.items if i.status == DocumentStatus.NEW]
+
+    @property
+    def modified_paths(self) -> list[str]:
+        return [i.relative_path for i in self.items if i.status == DocumentStatus.MODIFIED]
+
+    @property
+    def deleted_paths(self) -> list[str]:
+        return [i.relative_path for i in self.items if i.status == DocumentStatus.DELETED]
+
 
 class IngestionService:
     def __init__(
