@@ -2,9 +2,11 @@
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
+    QFrame,
     QHBoxLayout,
     QHeaderView,
     QPushButton,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -13,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from embedcraft.bootstrap.container import container
 from embedcraft.gui.components.card import Card, StatBox
+from embedcraft.gui.icons import get_icon
 
 
 class DashboardView(QWidget):
@@ -24,18 +27,30 @@ class DashboardView(QWidget):
         super().__init__(parent)
         self.setObjectName("workspace")
 
-        layout = QVBoxLayout(self)
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
+
+        scroll = QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        root_layout.addWidget(scroll)
+
+        content_widget = QWidget()
+        content_widget.setObjectName("workspace")
+        layout = QVBoxLayout(content_widget)
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(20)
+        scroll.setWidget(content_widget)
 
         # 1. Stat boxes row
         stats_layout = QHBoxLayout()
         stats_layout.setSpacing(16)
 
-        self.stat_projects = StatBox("Proyectos", "0", "📁", self)
-        self.stat_docs = StatBox("Documentos", "0", "📄", self)
-        self.stat_chunks = StatBox("Fragmentos", "0", "🧩", self)
-        self.stat_status = StatBox("Motor Vectorial", "Activo", "⚡", self)
+        self.stat_projects = StatBox("Proyectos", "0", "projects", content_widget)
+        self.stat_docs = StatBox("Documentos", "0", "file", content_widget)
+        self.stat_chunks = StatBox("Fragmentos", "0", "layers", content_widget)
+        self.stat_status = StatBox("Motor Vectorial", "Activo", "activity", content_widget)
 
         stats_layout.addWidget(self.stat_projects)
         stats_layout.addWidget(self.stat_docs)
@@ -45,24 +60,28 @@ class DashboardView(QWidget):
         layout.addLayout(stats_layout)
 
         # 2. Quick actions card
-        actions_card = Card("Acciones Rápidas", "Comandos directos de administración del estudio", self)
+        actions_card = Card("Acciones Rápidas", "Comandos directos de administración del estudio", content_widget)
         act_row = QHBoxLayout()
         act_row.setSpacing(12)
 
-        btn_new_proj = QPushButton("+ Crear Nuevo Proyecto", self)
+        btn_new_proj = QPushButton("Nuevo Proyecto", content_widget)
+        btn_new_proj.setIcon(get_icon("plus"))
         btn_new_proj.setProperty("class", "primaryBtn")
         btn_new_proj.clicked.connect(lambda: self.navigate_to.emit("projects"))
         act_row.addWidget(btn_new_proj)
 
-        btn_monitor = QPushButton("⚡ Ingestión de Documentos", self)
+        btn_monitor = QPushButton("Ingestión de Documentos", content_widget)
+        btn_monitor.setIcon(get_icon("play"))
         btn_monitor.clicked.connect(lambda: self.navigate_to.emit("monitor"))
         act_row.addWidget(btn_monitor)
 
-        btn_preview = QPushButton("🔍 Explorar Previews", self)
+        btn_preview = QPushButton("Explorar Previews", content_widget)
+        btn_preview.setIcon(get_icon("preview"))
         btn_preview.clicked.connect(lambda: self.navigate_to.emit("preview"))
         act_row.addWidget(btn_preview)
 
-        btn_doctor = QPushButton("🩺 Diagnóstico del Sistema", self)
+        btn_doctor = QPushButton("Diagnóstico del Sistema", content_widget)
+        btn_doctor.setIcon(get_icon("doctor"))
         btn_doctor.clicked.connect(lambda: self.navigate_to.emit("doctor"))
         act_row.addWidget(btn_doctor)
 
@@ -71,8 +90,8 @@ class DashboardView(QWidget):
         layout.addWidget(actions_card)
 
         # 3. Recent projects card
-        table_card = Card("Proyectos Recientes", "Catálogo local de proyectos RAG configurados", self)
-        self.table = QTableWidget(self)
+        table_card = Card("Proyectos Recientes", "Catálogo local de proyectos RAG configurados", content_widget)
+        self.table = QTableWidget(content_widget)
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels(["Nombre del Proyecto", "Descripción", "Revisión Activa", "Fecha"])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)

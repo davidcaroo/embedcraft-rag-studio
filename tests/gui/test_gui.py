@@ -196,3 +196,74 @@ def test_main_window_theme_reactivity(qapp):
     theme_manager.set_mode(ThemeMode.DARK)
     window.close()
 
+
+def test_statbox_vector_icons_and_styling(qapp):
+    from embedcraft.gui.components.card import StatBox
+
+    stat = StatBox("Proyectos", "12", icon="projects")
+    assert stat.lbl_title.objectName() == "statTitle"
+    assert stat.lbl_val.objectName() == "statValue"
+    assert hasattr(stat, "lbl_icon")
+    assert stat.lbl_icon.pixmap() is not None
+    assert not stat.lbl_icon.pixmap().isNull()
+    assert "📁" not in stat.lbl_title.text()
+    stat.close()
+
+
+def test_no_emojis_in_base_views(qapp):
+    from PySide6.QtWidgets import QLabel, QPushButton, QScrollArea
+
+    forbidden_emojis = ["📊", "📁", "⚡", "🔍", "📚", "💬", "🩺", "✔", "⚠", "✖", "📥", "📤", "📄", "🧩", "🔄", "➕"]
+
+    # 1. DashboardView
+    dash = DashboardView()
+    scroll_areas = dash.findChildren(QScrollArea)
+    assert len(scroll_areas) > 0, "DashboardView must have a QScrollArea for responsiveness"
+    assert scroll_areas[0].widgetResizable() is True
+
+    dash_buttons = dash.findChildren(QPushButton)
+    assert len(dash_buttons) >= 4
+    for btn in dash_buttons:
+        text = btn.text()
+        for emoji in forbidden_emojis:
+            assert emoji not in text, f"Emoji '{emoji}' found in Dashboard button: '{text}'"
+        assert not btn.icon().isNull(), f"Dashboard button '{text}' must have a valid vector QIcon"
+
+    dash_labels = dash.findChildren(QLabel)
+    for lbl in dash_labels:
+        text = lbl.text()
+        for emoji in forbidden_emojis:
+            assert emoji not in text, f"Emoji '{emoji}' found in Dashboard label: '{text}'"
+    dash.close()
+
+    # 2. ProjectsView
+    proj_view = ProjectsView()
+    proj_buttons = proj_view.findChildren(QPushButton)
+    assert len(proj_buttons) >= 5
+    for btn in proj_buttons:
+        text = btn.text()
+        for emoji in forbidden_emojis:
+            assert emoji not in text, f"Emoji '{emoji}' found in ProjectsView button: '{text}'"
+        assert not btn.icon().isNull(), f"ProjectsView button '{text}' must have a valid vector QIcon"
+
+    proj_labels = proj_view.findChildren(QLabel)
+    for lbl in proj_labels:
+        text = lbl.text()
+        for emoji in forbidden_emojis:
+            assert emoji not in text, f"Emoji '{emoji}' found in ProjectsView label: '{text}'"
+    proj_view.close()
+
+    # 3. DoctorView
+    doc_view = DoctorView()
+    assert not doc_view.btn_run.icon().isNull(), "DoctorView run button must have a valid vector QIcon"
+    assert "🔄" not in doc_view.btn_run.text()
+    for row in range(doc_view.table.rowCount()):
+        status_item = doc_view.table.item(row, 2)
+        if status_item:
+            text = status_item.text()
+            for emoji in forbidden_emojis:
+                assert emoji not in text, f"Emoji '{emoji}' found in DoctorView status item: '{text}'"
+            assert text in ("OK", "ADVERTENCIA", "ERROR", "FALLO")
+    doc_view.close()
+
+

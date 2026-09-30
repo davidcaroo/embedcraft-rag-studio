@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 from embedcraft.bootstrap.container import container
 from embedcraft.domain.entities import Project, Source
 from embedcraft.gui.components.card import Card
+from embedcraft.gui.icons import get_icon
 
 
 class CreateProjectDialog(QDialog):
@@ -81,19 +82,22 @@ class ProjectsView(QWidget):
         # Header action bar
         action_bar = QHBoxLayout()
         title = QLabel("Proyectos y Fuentes", self)
-        title.setStyleSheet("font-size: 18px; font-weight: 700; color: #0F172A;")
+        title.setObjectName("viewTitle")
         action_bar.addWidget(title)
         action_bar.addStretch()
 
-        btn_import = QPushButton("📥 Importar .ecraft", self)
+        btn_import = QPushButton("Importar .ecraft", self)
+        btn_import.setIcon(get_icon("download"))
         btn_import.clicked.connect(self._import_ecraft_package)
         action_bar.addWidget(btn_import)
 
-        btn_export = QPushButton("📤 Exportar .ecraft", self)
+        btn_export = QPushButton("Exportar .ecraft", self)
+        btn_export.setIcon(get_icon("upload"))
         btn_export.clicked.connect(self._export_ecraft_package)
         action_bar.addWidget(btn_export)
 
-        btn_create = QPushButton("+ Nuevo Proyecto", self)
+        btn_create = QPushButton("Nuevo Proyecto", self)
+        btn_create.setIcon(get_icon("plus"))
         btn_create.setProperty("class", "primaryBtn")
         btn_create.clicked.connect(self._open_create_dialog)
         action_bar.addWidget(btn_create)
@@ -120,11 +124,13 @@ class ProjectsView(QWidget):
         # 2. Sources Management Card
         src_card = Card("Fuentes de Datos", "Carpetas o archivos agregados al proyecto", self)
         src_actions = QHBoxLayout()
-        btn_add_folder = QPushButton("📁 Añadir Carpeta", self)
+        btn_add_folder = QPushButton("Añadir Carpeta", self)
+        btn_add_folder.setIcon(get_icon("folder"))
         btn_add_folder.clicked.connect(self._add_folder_source)
         src_actions.addWidget(btn_add_folder)
 
-        btn_add_file = QPushButton("📄 Añadir Archivo", self)
+        btn_add_file = QPushButton("Añadir Archivo", self)
+        btn_add_file.setIcon(get_icon("file"))
         btn_add_file.clicked.connect(self._add_file_source)
         src_actions.addWidget(btn_add_file)
 
@@ -141,6 +147,8 @@ class ProjectsView(QWidget):
 
         splitter.addWidget(src_card)
         splitter.setSizes([450, 450])
+        splitter.setStretchFactor(0, 1)
+        splitter.setStretchFactor(1, 1)
         layout.addWidget(splitter)
 
         self.reload_projects()

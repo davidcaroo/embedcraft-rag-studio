@@ -1,5 +1,6 @@
 """System diagnostics view displaying environment, storage, and dependency health."""
 
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
@@ -13,6 +14,8 @@ from PySide6.QtWidgets import (
 
 from embedcraft.bootstrap.container import container
 from embedcraft.gui.components.card import Card
+from embedcraft.gui.icons import get_icon
+from embedcraft.gui.theme import get_palette, theme_manager
 
 
 class DoctorView(QWidget):
@@ -29,11 +32,12 @@ class DoctorView(QWidget):
         # Header action bar
         action_bar = QHBoxLayout()
         title = QLabel("Diagnóstico de Salud del Sistema (Doctor)", self)
-        title.setStyleSheet("font-size: 18px; font-weight: 700; color: #0F172A;")
+        title.setObjectName("viewTitle")
         action_bar.addWidget(title)
         action_bar.addStretch()
 
-        self.btn_run = QPushButton("🔄 Reejecutar Diagnóstico", self)
+        self.btn_run = QPushButton("Reejecutar Diagnóstico", self)
+        self.btn_run.setIcon(get_icon("refresh"))
         self.btn_run.setProperty("class", "primaryBtn")
         self.btn_run.clicked.connect(self.run_diagnostics)
         action_bar.addWidget(self.btn_run)
@@ -64,18 +68,22 @@ class DoctorView(QWidget):
             checks = container.system_service.run_doctor()
             self.table.setRowCount(len(checks))
 
+            palette = get_palette(theme_manager.mode)
             for idx, c in enumerate(checks):
                 self.table.setItem(idx, 0, QTableWidgetItem(c.category))
                 self.table.setItem(idx, 1, QTableWidgetItem(c.name))
 
-                # Status label / chip
+                # Clean status label with semantic color
                 status_item = QTableWidgetItem()
                 if c.status == "ok":
-                    status_item.setText("✔ OK")
+                    status_item.setText("OK")
+                    status_item.setForeground(QColor(palette.SUCCESS))
                 elif c.status == "warning":
-                    status_item.setText("⚠ ADVERTENCIA")
+                    status_item.setText("ADVERTENCIA")
+                    status_item.setForeground(QColor(palette.WARNING))
                 else:
-                    status_item.setText("✖ ERROR")
+                    status_item.setText("ERROR")
+                    status_item.setForeground(QColor(palette.ERROR))
                 self.table.setItem(idx, 2, status_item)
 
                 detail = c.message
@@ -87,7 +95,10 @@ class DoctorView(QWidget):
             self.table.setRowCount(1)
             self.table.setItem(0, 0, QTableWidgetItem("Error"))
             self.table.setItem(0, 1, QTableWidgetItem("Ejecución"))
-            self.table.setItem(0, 2, QTableWidgetItem("✖ FALLO"))
+            err_item = QTableWidgetItem("FALLO")
+            err_item.setForeground(QColor(get_palette(theme_manager.mode).ERROR))
+            self.table.setItem(0, 2, err_item)
             self.table.setItem(0, 3, QTableWidgetItem(str(e)))
         finally:
             self.btn_run.setEnabled(True)
+

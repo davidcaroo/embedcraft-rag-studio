@@ -1,5 +1,7 @@
 """Card and StatBox reusable layout components."""
 
+from __future__ import annotations
+
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -7,6 +9,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from embedcraft.gui.icons import get_pixmap
+from embedcraft.gui.theme import get_palette, theme_manager
 
 
 class Card(QFrame):
@@ -47,6 +52,7 @@ class StatBox(QFrame):
         super().__init__(parent)
         self.setProperty("class", "card")
         self.setMinimumHeight(100)
+        self._icon_name = icon
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 16, 18, 16)
@@ -54,20 +60,32 @@ class StatBox(QFrame):
 
         top_layout = QHBoxLayout()
         self.lbl_title = QLabel(title, self)
-        self.lbl_title.setStyleSheet("color: #64748B; font-weight: 600; font-size: 12px; text-transform: uppercase;")
+        self.lbl_title.setObjectName("statTitle")
         top_layout.addWidget(self.lbl_title)
         top_layout.addStretch()
 
         if icon:
-            self.lbl_icon = QLabel(icon, self)
-            self.lbl_icon.setStyleSheet("font-size: 16px;")
+            self.lbl_icon = QLabel(self)
+            self._update_icon()
             top_layout.addWidget(self.lbl_icon)
+            theme_manager.theme_changed.connect(self._on_theme_changed)
 
         layout.addLayout(top_layout)
 
         self.lbl_val = QLabel(value, self)
-        self.lbl_val.setStyleSheet("font-size: 26px; font-weight: 700; color: #0F172A;")
+        self.lbl_val.setObjectName("statValue")
         layout.addWidget(self.lbl_val)
+
+    def _update_icon(self) -> None:
+        if self._icon_name and hasattr(self, "lbl_icon"):
+            palette = get_palette(theme_manager.mode)
+            self.lbl_icon.setPixmap(
+                get_pixmap(self._icon_name, color=palette.PRIMARY, size=20)
+            )
+
+    def _on_theme_changed(self, mode: str) -> None:
+        self._update_icon()
 
     def set_value(self, val: str):
         self.lbl_val.setText(val)
+
