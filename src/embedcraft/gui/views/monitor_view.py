@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import (
+    QCheckBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -18,7 +19,7 @@ from PySide6.QtWidgets import (
 from embedcraft.gui.components.card import Card, StatBox
 from embedcraft.gui.icons import get_icon
 from embedcraft.gui.theme import get_palette, theme_manager
-from embedcraft.gui.workers.async_workers import IngestionWorker
+from embedcraft.gui.workers.async_workers import IndexingWorker, IngestionWorker
 
 
 class MonitorView(QWidget):
@@ -64,6 +65,7 @@ class MonitorView(QWidget):
         self.pill_extr = self._create_stage_pill("2. Extraer")
         self.pill_norm = self._create_stage_pill("3. Normalizar")
         self.pill_frag = self._create_stage_pill("4. Fragmentar")
+        self.pill_index = self._create_stage_pill("5. Indexar")
 
         stage_layout.addWidget(self.pill_disc)
         stage_layout.addWidget(QLabel("->", content_widget))
@@ -72,6 +74,8 @@ class MonitorView(QWidget):
         stage_layout.addWidget(self.pill_norm)
         stage_layout.addWidget(QLabel("->", content_widget))
         stage_layout.addWidget(self.pill_frag)
+        stage_layout.addWidget(QLabel("->", content_widget))
+        stage_layout.addWidget(self.pill_index)
         stage_layout.addStretch()
 
         stage_card.add_layout(stage_layout)
@@ -115,12 +119,26 @@ class MonitorView(QWidget):
         self.btn_cancel.clicked.connect(self.cancel_ingestion)
         btn_layout.addWidget(self.btn_cancel)
 
+        self.btn_publish_index = QPushButton("Publicar Índice Ahora", content_widget)
+        self.btn_publish_index.setIcon(get_icon("layers"))
+        self.btn_publish_index.clicked.connect(self.publish_index)
+        btn_layout.addWidget(self.btn_publish_index)
+
         self.btn_clear = QPushButton("Limpiar Registro", content_widget)
         self.btn_clear.clicked.connect(self._clear_logs)
         btn_layout.addWidget(self.btn_clear)
 
         btn_layout.addStretch()
         prog_card.add_layout(btn_layout)
+
+        # Auto-publish option row
+        opt_layout = QHBoxLayout()
+        self.chk_auto_publish = QCheckBox("Publicar índice automáticamente al terminar ingestión", content_widget)
+        self.chk_auto_publish.setChecked(True)
+        opt_layout.addWidget(self.chk_auto_publish)
+        opt_layout.addStretch()
+        prog_card.add_layout(opt_layout)
+
         layout.addWidget(prog_card)
 
         # 4. Live log console
@@ -186,15 +204,77 @@ class MonitorView(QWidget):
         self.stat_docs.set_value(f"{current} / {total}")
         self.lbl_current_file.setText(f"Procesando: {filename}")
 
+    def _set_stage_active(self, pill: QLabel, active: bool):
+        palette = get_palette(theme_manager.mode)
+        bg = palette.PRIMARY if active else palette.BG_CARD
+        fg = palette.TEXT_INVERSE if active else palette.TEXT_SECONDARY
+        border = palette.PRIMARY if active else palette.BORDER
+        pill.setStyleSheet(
+            f"padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; "
+            f"background-color: {bg}; color: {fg}; border: 1px solid {border};"
+        )
+
     def _on_finished(self, summary: dict):
         self.progress_bar.setValue(100)
-        self.stat_status.set_value("Completado")
+        self.stat_status.set_value("Ingestado")
         palette = get_palette(theme_manager.mode)
         self.stat_status.lbl_val.setStyleSheet(f"font-size: 26px; font-weight: 700; color: {palette.SUCCESS};")
         self.stat_chunks.set_value(str(summary.get("generated_chunks", 0)))
-        self.lbl_current_file.setText("Proceso finalizado.")
+        self.lbl_current_file.setText("Ingestión completada.")
         self.btn_start.setEnabled(True)
         self.btn_cancel.setEnabled(False)
+        self._cleanup_worker()
+
+        if self.chk_auto_publish.isChecked() and self._current_project_id:
+            self._append_log("Iniciando publicación automática de índice...", "INFO")
+            self.publish_index()
+        else:
+            self._append_log("Ingestión completada. Presione 'Publicar Índice Ahora' para habilitar consultas en el Chat.", "INFO")
+
+    def publish_index(self):
+        if not self._current_project_id:
+            self._append_log("Debe seleccionar un proyecto activo antes de publicar el índice.", "WARNING")
+            return
+
+        if self._worker_thread and self._worker_thread.isRunning():
+            return
+
+        self.btn_start.setEnabled(False)
+        self.btn_publish_index.setEnabled(False)
+        self.btn_cancel.setEnabled(False)
+        self.stat_status.set_value("Indexando...")
+        palette = get_palette(theme_manager.mode)
+        self.stat_status.lbl_val.setStyleSheet(f"font-size: 26px; font-weight: 700; color: {palette.PRIMARY};")
+        self._set_stage_active(self.pill_index, True)
+
+        self._append_log("Generando embeddings e indexando vectores y léxico en segundo plano...", "INFO")
+
+        self._worker_thread = QThread()
+        self._worker = IndexingWorker(self._current_project_id)
+        self._worker.moveToThread(self._worker_thread)
+
+        self._worker_thread.started.connect(self._worker.run)
+        self._worker.log_emitted.connect(self._append_log)
+        self._worker.job_finished.connect(self._on_indexing_finished)
+        self._worker.job_failed.connect(self._on_indexing_failed)
+        self._worker_thread.start()
+
+    def _on_indexing_finished(self, rev_dict: dict):
+        self.stat_status.set_value("Índice Activo")
+        palette = get_palette(theme_manager.mode)
+        self.stat_status.lbl_val.setStyleSheet(f"font-size: 26px; font-weight: 700; color: {palette.SUCCESS};")
+        self.btn_start.setEnabled(True)
+        self.btn_publish_index.setEnabled(True)
+        self._cleanup_worker()
+        rev_num = rev_dict.get("revision_number", 1)
+        self._append_log(f"Revisión #{rev_num} publicada y activa con éxito. El proyecto está listo para consultas en el Chat.", "SUCCESS")
+
+    def _on_indexing_failed(self, error: str):
+        self.stat_status.set_value("Error Índice")
+        palette = get_palette(theme_manager.mode)
+        self.stat_status.lbl_val.setStyleSheet(f"font-size: 26px; font-weight: 700; color: {palette.ERROR};")
+        self.btn_start.setEnabled(True)
+        self.btn_publish_index.setEnabled(True)
         self._cleanup_worker()
 
     def _on_failed(self, error: str):

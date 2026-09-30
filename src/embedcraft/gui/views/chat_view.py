@@ -4,6 +4,7 @@ import html
 from datetime import UTC, datetime
 from pathlib import Path
 
+from PySide6.QtCore import QThread
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -29,6 +30,7 @@ from embedcraft.domain.value_objects import SearchMode
 from embedcraft.gui.components.card import Card
 from embedcraft.gui.icons import get_icon
 from embedcraft.gui.theme import get_palette, theme_manager
+from embedcraft.gui.workers.async_workers import IndexingWorker
 
 
 class ChatView(QWidget):
@@ -39,6 +41,8 @@ class ChatView(QWidget):
         self.setObjectName("workspace")
         self._current_project_id: str | None = None
         self._last_session_data = None
+        self._idx_thread: QThread | None = None
+        self._idx_worker: IndexingWorker | None = None
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 24)
@@ -169,6 +173,25 @@ class ChatView(QWidget):
         self._current_project_id = project_id
         self._append_system_message(f"Proyecto activo establecido: {project_id}")
 
+    def _check_index_readiness(self) -> tuple[bool, str]:
+        if not self._current_project_id:
+            return False, "no_project"
+        try:
+            with container.get_session() as session:
+                proj_repo = container.get_project_repository(session)
+                doc_repo = container.get_document_repository(session)
+                proj = proj_repo.get_by_id(self._current_project_id)
+                if not proj:
+                    return False, "not_found"
+                if proj.active_revision_id:
+                    return True, "ready"
+                chunks = doc_repo.list_chunks_by_project(self._current_project_id)
+                if not chunks:
+                    return False, "no_chunks"
+                return False, "needs_index"
+        except Exception:
+            return True, "unknown"
+
     def send_message(self):
         query = self.input_edit.text().strip()
         if not query:
@@ -178,15 +201,43 @@ class ChatView(QWidget):
             QMessageBox.warning(self, "Atención", "Seleccione un proyecto activo en el encabezado.")
             return
 
-        self._append_user_message(query)
-        self.input_edit.clear()
-        self.btn_send.setEnabled(False)
-
         mode = SearchMode(self.combo_mode.currentText())
         top_k = self.spin_topk.value()
         use_rerank = self.chk_rerank.isChecked()
         retrieval_only = self.chk_retrieval_only.isChecked()
 
+        ready, status = self._check_index_readiness()
+        if not ready:
+            if status == "needs_index":
+                reply = QMessageBox.question(
+                    self,
+                    "Índice no publicado",
+                    "El proyecto contiene documentos procesados pero aún no tiene un índice de búsqueda publicado.\n\n"
+                    "¿Desea publicar el índice ahora automáticamente para responder a su pregunta?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.Yes,
+                )
+                if reply == QMessageBox.Yes:
+                    self._append_user_message(query)
+                    self.input_edit.clear()
+                    self.publish_index_for_current_project(
+                        callback=lambda: self._execute_ask(query, mode, top_k, use_rerank, retrieval_only)
+                    )
+                    return
+                else:
+                    self._append_system_message("Operación cancelada: El proyecto requiere publicar un índice para realizar búsquedas.")
+                    return
+            elif status == "no_chunks":
+                self._append_system_message("El proyecto no tiene documentos procesados todavía. Ingeste documentos primero en la sección 'Ingestión & Monitor'.")
+                return
+
+        self._append_user_message(query)
+        self.input_edit.clear()
+        self.btn_send.setEnabled(False)
+        self._execute_ask(query, mode, top_k, use_rerank, retrieval_only)
+
+    def _execute_ask(self, query: str, mode: SearchMode, top_k: int, use_rerank: bool, retrieval_only: bool):
+        self.btn_send.setEnabled(False)
         try:
             with container.get_session() as session:
                 chat_svc = container.get_chat_service(session)
@@ -207,6 +258,42 @@ class ChatView(QWidget):
             self._append_system_message(f"Error procesando consulta: {str(e)}")
         finally:
             self.btn_send.setEnabled(True)
+
+    def publish_index_for_current_project(self, callback=None):
+        if not self._current_project_id:
+            return
+
+        self.btn_send.setEnabled(False)
+        self._append_system_message("Generando embeddings y publicando índice en segundo plano...")
+
+        self._idx_thread = QThread()
+        self._idx_worker = IndexingWorker(self._current_project_id)
+        self._idx_worker.moveToThread(self._idx_thread)
+
+        def on_finished(rev_dict: dict):
+            rev_num = rev_dict.get("revision_number", 1)
+            self._append_system_message(f"Índice publicado con éxito (Revisión #{rev_num}).")
+            self.btn_send.setEnabled(True)
+            self._cleanup_idx_worker()
+            if callback:
+                callback()
+
+        def on_failed(error: str):
+            self._append_system_message(f"Error al publicar el índice: {error}")
+            self.btn_send.setEnabled(True)
+            self._cleanup_idx_worker()
+
+        self._idx_thread.started.connect(self._idx_worker.run)
+        self._idx_worker.job_finished.connect(on_finished)
+        self._idx_worker.job_failed.connect(on_failed)
+        self._idx_thread.start()
+
+    def _cleanup_idx_worker(self):
+        if self._idx_thread:
+            self._idx_thread.quit()
+            self._idx_thread.wait()
+            self._idx_thread = None
+            self._idx_worker = None
 
     def _update_diagnostics(self, diag):
         lat = diag.latencies

@@ -414,6 +414,23 @@ def test_ingestion_worker_scan_and_execution(qapp, tmp_path):
     assert len(finished_data) == 1
     assert finished_data[0]["status"] == "up_to_date"
 
+def test_monitor_view_auto_publish_and_pipeline_stages(qapp):
+    from embedcraft.gui.views.monitor_view import MonitorView
+
+    monitor = MonitorView()
+    assert hasattr(monitor, "chk_auto_publish"), "MonitorView must have chk_auto_publish checkbox"
+    assert monitor.chk_auto_publish.isChecked(), "chk_auto_publish should default to checked"
+    assert hasattr(monitor, "btn_publish_index"), "MonitorView must have btn_publish_index button"
+    assert hasattr(monitor, "pill_index"), "MonitorView pipeline stages must include pill_index"
+    assert hasattr(monitor, "publish_index"), "MonitorView must provide publish_index method"
+    monitor.close()
 
 
+def test_chat_view_has_index_publishing_capability(qapp):
+    from embedcraft.gui.views.chat_view import ChatView
+
+    chat = ChatView()
+    assert hasattr(chat, "publish_index_for_current_project"), "ChatView must have publish_index_for_current_project"
+    assert hasattr(chat, "_check_index_readiness"), "ChatView must have _check_index_readiness method"
+    chat.close()
 
