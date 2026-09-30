@@ -11,9 +11,10 @@
 [![CLI Typer](https://img.shields.io/badge/CLI-Typer-009485.svg?style=flat-square)](https://typer.tiangolo.com/)
 [![Storage SQLite WAL](https://img.shields.io/badge/Database-SQLite%20WAL%20%2B%20FTS5-003B57.svg?style=flat-square&logo=sqlite&logoColor=white)](https://sqlite.org/)
 [![Vector Store LanceDB](https://img.shields.io/badge/Vectors-LanceDB-0052CC.svg?style=flat-square)](https://lancedb.github.io/lancedb/)
+[![Theme Dark & Light](https://img.shields.io/badge/Themes-Dark%20%7C%20Light-6366F1.svg?style=flat-square)](src/embedcraft/gui/theme.py)
 [![Security Audited](https://img.shields.io/badge/Security%20Audit-Zero%20High%2FCrit-brightgreen.svg?style=flat-square&logo=shield)](docs/SECURITY_AUDIT_REPORT.md)
 [![License MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
-[![Tests Passing](https://img.shields.io/badge/Tests-69%2F69%20Passed-success.svg?style=flat-square&logo=pytest)](tests/)
+[![Tests Passing](https://img.shields.io/badge/Tests-113%2F113%20Passed-success.svg?style=flat-square&logo=pytest)](tests/)
 
 [Características](#características-principales) •
 [Galería de Vistas](#galería-visual-de-la-interfaz) •
@@ -39,16 +40,17 @@ A diferencia de soluciones experimentales o scripts aislados, EmbedCraft aborda 
 3. **Búsqueda Híbrida Precisa:** Fusión de Rangos Recíprocos (RRF, $k=60$) que unifica recuperación vectorial densa (HNSW) y léxica probabilística (BM25 / SQLite FTS5).
 4. **Trazabilidad Forense:** Cada respuesta generada o recuperada cuenta con citas canónicas a nivel de fragmento (`chunk_id`, `document_id`, sección y página original).
 5. **Seguridad y Cero Exfiltración:** Almacenamiento seguro de credenciales con Windows Credential Manager (`keyring`), defensas contra Zip Slip/Zip Bomb, validación de rutas canónicas contra Path Traversal y ausencia total de telemetría.
+6. **Diseño Impeccable (Zero Emojis & Dual-Theme):** Interfaz gráfica pulida con iconografía vectorial SVG de precisión, modo oscuro y modo claro conmutables en tiempo real mediante selector interactivo Sol / Luna, y adaptabilidad fluida ante cualquier tamaño de ventana.
 
 ---
 
 ## Galería Visual de la Interfaz
 
-La interfaz gráfica de escritorio de EmbedCraft RAG Studio está optimizada para la ergonomía del ingeniero de datos e IA, implementando un diseño oscuro moderno con paleta semántica, retroalimentación táctil y latencias instantáneas.
+La interfaz gráfica de escritorio de EmbedCraft RAG Studio está optimizada para la ergonomía del ingeniero de datos e IA, implementando un diseño oscuro moderno con paleta semántica, retroalimentación táctil, cero emojis y soporte instantáneo para Modo Claro.
 
-### 1. Panel de Control Ejecutivo (Dashboard)
-Visibilidad inmediata de proyectos, fuentes conectadas, volumen de documentos, total de fragmentos vectorizados y estado de salud del hardware local.
-![Dashboard Principal](docs/assets/screenshots/01_dashboard.png)
+### 1. Panel de Control Ejecutivo (Dashboard - Modo Oscuro)
+Visibilidad inmediata de proyectos, fuentes conectadas, volumen de documentos, total de fragmentos vectorizados y estado de salud del hardware local con iconografía vectorial limpia.
+![Dashboard Principal Modo Oscuro](docs/assets/screenshots/01_dashboard.png)
 
 ---
 
@@ -59,7 +61,7 @@ Administración centralizada de espacios de trabajo, políticas de chunking, rut
 ---
 
 ### 3. Inspector Tridimensional de Documentos y Fragmentación
-Inspección profunda en 3 paneles: jerarquía de documentos del corpus, texto plano normalizado canónico e inspección granular de fragmentos (chunks) con token counts y metadatos de sección.
+Inspección profunda en 3 paneles elásticos: jerarquía de documentos del corpus, texto plano normalizado canónico e inspección granular de fragmentos (chunks) con token counts y metadatos de sección.
 ![Inspector de Documentos y Chunks](docs/assets/screenshots/03_document_preview.png)
 
 ---
@@ -71,8 +73,14 @@ Entorno de pruebas conversacional en tiempo real con vinculación directa a fuen
 ---
 
 ### 5. Doctor del Sistema (System Health & Hardware Diagnostics)
-Diagnóstico automatizado de la infraestructura de ejecución: aceleración por hardware (GPU NVIDIA CUDA / DirectML / CPU multithread), integridad del almacén de credenciales seguro de Windows y disponibilidad de almacenamiento.
+Diagnóstico automatizado de la infraestructura de ejecución con insignias tipográficas limpias (`OK`, `ADVERTENCIA`, `ERROR`): aceleración por hardware, almacén de credenciales seguro de Windows y almacenamiento.
 ![Doctor de Sistema y Diagnósticos de Hardware](docs/assets/screenshots/05_doctor_diagnostics.png)
+
+---
+
+### 6. Alternancia Fluida: Modo Claro y Modo Oscuro
+Selector interactivo en la cabecera con icono vectorial Sol / Luna que transforma instantáneamente la totalidad de la interfaz a un tema claro de alto contraste (WCAG AA).
+![Dashboard Modo Claro](docs/assets/screenshots/06_light_mode_dashboard.png)
 
 ---
 

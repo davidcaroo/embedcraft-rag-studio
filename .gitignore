@@ -59,6 +59,7 @@ temp/
 logs/
 *.ecraft
 .security-audit/
+.superpowers/
 
 # Local prompt instructions and helper scripts
 Prompt maestro.md
