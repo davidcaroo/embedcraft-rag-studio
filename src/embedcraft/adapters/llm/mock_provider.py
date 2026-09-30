@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 
 from embedcraft.ports.llm import LLMProvider, LLMResponse
@@ -35,7 +36,12 @@ class MockLLMProvider(LLMProvider):
             if not context_part:
                 content = "No cuento con evidencia suficiente en los documentos del proyecto para responder a esta pregunta."
             else:
-                lines = [ln.strip() for ln in context_part.splitlines() if ln.strip() and not ln.startswith("[")]
+                clean_context = re.sub(r"<[^>]+>", "", context_part)
+                lines = [
+                    ln.strip()
+                    for ln in clean_context.splitlines()
+                    if ln.strip() and not ln.startswith("[") and not ln.startswith("<")
+                ]
                 summary = " ".join(lines[:3]) if lines else "Información extraída de las fuentes del proyecto."
                 content = f"Basado en los documentos indexados, {summary} [1]"
 

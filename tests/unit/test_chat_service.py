@@ -19,10 +19,17 @@ def test_mock_llm_provider_grounding():
 
     # 2. Context with content generates grounded response with citation
     resp_grounded = provider.generate(
-        "CONTEXTO PROPORCIONADO:\n[1] Archivo: doc.txt\nLa velocidad máxima del rover es de 15 km/h.\n\nPREGUNTA:\nCual es la velocidad?\nRESPUESTA FUNDAMENTADA:"
+        "CONTEXTO PROPORCIONADO:\n"
+        '<untrusted_document_context id="1" source="doc.pdf">\n'
+        "[1] Archivo: doc.pdf\n"
+        "La velocidad máxima del rover es de 15 km/h.\n"
+        "</untrusted_document_context>\n\n"
+        "PREGUNTA:\nCual es la velocidad?\nRESPUESTA FUNDAMENTADA:"
     )
     assert "15 km/h" in resp_grounded.content
     assert "[1]" in resp_grounded.content
+    assert "<untrusted_document_context" not in resp_grounded.content
+    assert "</untrusted_document_context>" not in resp_grounded.content
     assert resp_grounded.prompt_tokens > 0
     assert resp_grounded.completion_tokens > 0
 
