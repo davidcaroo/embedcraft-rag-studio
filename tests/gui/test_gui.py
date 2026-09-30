@@ -101,3 +101,98 @@ def test_chat_view_rendering_and_interaction(qapp):
     chat.set_project("test-chat-proj")
     assert chat._current_project_id == "test-chat-proj"
     chat.close()
+
+
+def test_sidebar_vector_icons_and_clean_labels(qapp):
+    from embedcraft.gui.components.sidebar import Sidebar
+
+    sidebar = Sidebar()
+    expected_labels = {
+        "dashboard": "Inicio / Métricas",
+        "projects": "Proyectos RAG",
+        "monitor": "Ingestión & Monitor",
+        "preview": "Previews & Chunks",
+        "collections": "Colecciones & Índices",
+        "chat": "Chat de Prueba",
+        "doctor": "Diagnóstico Doctor",
+    }
+
+    emojis = ["📊", "📁", "⚡", "🔍", "📚", "💬", "🩺"]
+
+    for key, expected_text in expected_labels.items():
+        assert key in sidebar._buttons
+        btn = sidebar._buttons[key]
+        assert btn.text() == expected_text
+        for emoji in emojis:
+            assert emoji not in btn.text(), f"Emoji '{emoji}' found in sidebar button '{key}'"
+        assert not btn.icon().isNull(), f"Button '{key}' should have a valid vector QIcon"
+
+    # Verify refresh_icons method works and updates icons
+    sidebar.refresh_icons("light")
+    for key in expected_labels:
+        assert not sidebar._buttons[key].icon().isNull()
+
+    sidebar.refresh_icons("dark")
+    for key in expected_labels:
+        assert not sidebar._buttons[key].icon().isNull()
+
+    sidebar.close()
+
+
+def test_header_bar_theme_toggle_and_clean_projects(qapp):
+    from embedcraft.gui.components.header import HeaderBar
+    from embedcraft.gui.theme import ThemeMode, theme_manager
+
+    # Reset theme to dark for predictable test starting state
+    theme_manager.set_mode(ThemeMode.DARK)
+
+    header = HeaderBar()
+    assert hasattr(header, "btn_theme"), "HeaderBar must have a btn_theme button"
+    assert header.btn_theme.objectName() == "btnThemeToggle"
+    assert not header.btn_theme.icon().isNull()
+    assert header.btn_theme.toolTip() == "Cambiar a Modo Claro"
+
+    # Test toggling theme via clicking btn_theme
+    header.btn_theme.click()
+    assert theme_manager.mode == ThemeMode.LIGHT
+    assert header.btn_theme.toolTip() == "Cambiar a Modo Oscuro"
+    assert not header.btn_theme.icon().isNull()
+
+    # Toggle back
+    header.btn_theme.click()
+    assert theme_manager.mode == ThemeMode.DARK
+    assert header.btn_theme.toolTip() == "Cambiar a Modo Claro"
+
+    # Verify project combo doesn't have emoji 📁
+    for idx in range(header.project_combo.count()):
+        text = header.project_combo.itemText(idx)
+        assert "📁" not in text, f"Emoji 📁 found in project combo item: {text}"
+
+    header.close()
+
+
+def test_main_window_theme_reactivity(qapp):
+    from embedcraft.gui.theme import ThemeMode, theme_manager
+
+    theme_manager.set_mode(ThemeMode.DARK)
+    window = MainWindow()
+
+    app = QApplication.instance()
+    assert app is not None
+    initial_stylesheet = app.styleSheet()
+    assert len(initial_stylesheet) > 0, "MainWindow should apply the global stylesheet on init"
+    assert "#0B0F19" in initial_stylesheet or "#111827" in initial_stylesheet
+
+    # Toggle to light mode
+    theme_manager.toggle_theme()
+    assert theme_manager.mode == ThemeMode.LIGHT
+    light_stylesheet = app.styleSheet()
+    assert "#F8FAFC" in light_stylesheet or "#FFFFFF" in light_stylesheet
+
+    # Check status bar style update
+    assert window.statusBar() is not None
+
+    # Toggle back to dark
+    theme_manager.set_mode(ThemeMode.DARK)
+    window.close()
+

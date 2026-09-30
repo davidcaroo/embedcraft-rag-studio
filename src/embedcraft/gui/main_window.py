@@ -1,6 +1,7 @@
 """Main application window uniting Sidebar, Header, and modular Views."""
 
 from PySide6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QMainWindow,
     QStackedWidget,
@@ -12,6 +13,8 @@ from PySide6.QtWidgets import (
 from embedcraft import __version__
 from embedcraft.gui.components.header import HeaderBar
 from embedcraft.gui.components.sidebar import Sidebar
+from embedcraft.gui.styles import get_application_stylesheet
+from embedcraft.gui.theme import ThemeMode, get_palette, theme_manager
 from embedcraft.gui.views.chat_view import ChatView
 from embedcraft.gui.views.collections_view import CollectionsView
 from embedcraft.gui.views.dashboard_view import DashboardView
@@ -64,9 +67,15 @@ class MainWindow(QMainWindow):
 
         # Status Bar
         status_bar = QStatusBar(self)
-        status_bar.setStyleSheet("background-color: #FFFFFF; color: #64748B; font-size: 11px;")
         status_bar.showMessage(f"EmbedCraft RAG Studio v{__version__} | Base de datos SQLite WAL | Vector Engine LanceDB")
         self.setStatusBar(status_bar)
+        self._update_status_bar_theme(theme_manager.mode)
+
+        # Apply global application stylesheet and bind theme reactivity
+        app = QApplication.instance()
+        if app:
+            app.setStyleSheet(get_application_stylesheet(theme_manager.mode))
+        theme_manager.theme_changed.connect(self._on_theme_changed)
 
         # Connect navigation signals
         self.sidebar.view_changed.connect(self._on_navigation_changed)
@@ -76,6 +85,24 @@ class MainWindow(QMainWindow):
         initial_proj_id = self.header.get_current_project_id()
         if initial_proj_id:
             self._on_project_changed(initial_proj_id)
+
+    def _update_status_bar_theme(self, mode: ThemeMode | str) -> None:
+        palette = get_palette(mode)
+        sb = self.statusBar()
+        if sb:
+            sb.setStyleSheet(
+                f"background-color: {palette.BG_CARD}; "
+                f"color: {palette.TEXT_MUTED}; "
+                f"border-top: 1px solid {palette.BORDER}; "
+                f"font-size: 11px; padding: 2px 8px;"
+            )
+
+    def _on_theme_changed(self, mode_str: str) -> None:
+        app = QApplication.instance()
+        if app:
+            app.setStyleSheet(get_application_stylesheet(mode_str))
+        self._update_status_bar_theme(mode_str)
+
 
     def _init_views(self):
         # 1. Dashboard
